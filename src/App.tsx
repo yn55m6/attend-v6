@@ -1,22 +1,54 @@
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import LayoutWrapper from './components/layout/LayoutWrapper';
+import { AuthProvider } from './contexts/AuthContext';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 
-// 임시 페이지 컴포넌트
-const Home = () => <div className="text-center py-10 text-gray-500">출석 체크 페이지 (준비 중)</div>;
-const Members = () => <div className="text-center py-10 text-gray-500">회원 관리 페이지 (준비 중)</div>;
-const Reports = () => <div className="text-center py-10 text-gray-500">리포트 페이지 (준비 중)</div>;
+// Layout
+import Header from './components/layout/Header';
+import BottomNav from './components/layout/BottomNav';
 
-function App() {
+// Pages
+import HomePage from './pages/HomePage';
+import MembersPage from './pages/MembersPage';
+import ReportsPage from './pages/ReportsPage';
+import AdminPage from './pages/AdminPage';
+import LoginPage from './pages/LoginPage';
+import QRScanPage from './pages/QRScanPage';
+
+const App: React.FC = () => {
   return (
-    <Router>
-      <LayoutWrapper>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/members" element={<Members />} />
-          <Route path="/reports" element={<Reports />} />
-        </Routes>
-      </LayoutWrapper>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
+          <Routes>
+            {/* 인증이 필요 없는 페이지 (QR 스캔) */}
+            <Route path="/scan" element={<QRScanPage />} />
+            <Route path="/login" element={<LoginPage />} />
+
+            {/* 관리자 레이아웃이 적용된 페이지 */}
+            <Route
+              path="/*"
+              element={
+                <ProtectedRoute>
+                  <div className="flex flex-col min-h-screen">
+                    <Header />
+                    <main className="flex-1 overflow-y-auto">
+                      <Routes>
+                        <Route path="/" element={<HomePage />} />
+                        <Route path="/members" element={<MembersPage />} />
+                        <Route path="/reports" element={<ReportsPage />} />
+                        <Route path="/admin" element={<AdminPage />} />
+                      </Routes>
+                    </main>
+                    <BottomNav />
+                  </div>
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </div>
+      </Router>
+    </AuthProvider>
   );
 }
 

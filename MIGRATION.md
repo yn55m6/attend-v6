@@ -70,6 +70,7 @@ src/
 
 ### Phase 4: 기능 검증 및 배포
  [x] 1. 기존 v5 데이터와 연동 테스트 (App.tsx 라우팅 및 Context 연동 완료).
+ [x] 2. 빌드 오류 수정 및 파일 구조 최적화.
 - [ ] 3. Vercel 또는 Firebase Hosting 배포.
 - [ ] 4. README.md 업데이트 (프로젝트 설명, 설치 방법, 기술 스택 등).
 
