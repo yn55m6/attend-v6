@@ -16,3 +16,10 @@ export interface Log {
   day: string;
   time: string;
 }
+
+export interface Session {
+  code: string;
+  name: string;
+  day: string;
+  time: string;
+}

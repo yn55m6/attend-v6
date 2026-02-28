@@ -1,7 +1,8 @@
+import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { Home, Users, BarChart3 } from 'lucide-react';
 
-const BottomNav = () => {
+const BottomNav: React.FC = () => {
   const navItems = [
     { to: '/', icon: <Home size={24} />, label: '출석' },
     { to: '/members', icon: <Users size={24} />, label: '회원' },
