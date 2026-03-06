@@ -367,8 +367,8 @@
         <section id="page-instructors" class="page">
             <div class="card h-[calc(100vh-140px)] flex flex-col">
                 <div class="flex-none border-b border-gray-200 pb-4 mb-4">
-                    <h3 class="font-bold text-xl text-gray-700 mb-2"><i class="fas fa-chalkboard-teacher mr-2"></i>담당 사범 관리</h3>
-                    <p class="text-xs text-gray-400">* 각 수업(차수)별 담당 사범을 등록/수정/삭제합니다.</p>
+                    <h3 class="font-bold text-xl text-gray-700 mb-2"><i class="fas fa-chalkboard-teacher mr-2"></i>수업 사범 관리</h3>
+                    <p class="text-xs text-gray-400">* 각 수업(차수)별 수업 사범을 등록/수정/삭제합니다.</p>
                 </div>
                 <div class="flex-1 overflow-y-auto relative">
                     <ul id="instructor-management-list" class="divide-y divide-gray-100"></ul>
@@ -515,7 +515,7 @@
                 <i class="fas fa-paste" aria-hidden="true"></i><span>일괄입력</span>
             </div>
             <div class="nav-item admin-only" onclick="switchPage(this, 'instructors')">
-                <i class="fas fa-chalkboard-teacher" aria-hidden="true"></i><span>사범관리</span>
+                <i class="fas fa-chalkboard-teacher" aria-hidden="true"></i><span>수업사범</span>
             </div>
             <div class="nav-item" onclick="switchPage(this, 'reports')">
                 <i class="fas fa-chart-bar" aria-hidden="true"></i><span>리포트</span>
@@ -757,10 +757,10 @@
 <div id="instructor-edit-modal" class="fixed inset-0 bg-black bg-opacity-90 z-50 hidden flex flex-col justify-center items-center p-6 no-print">
     <div class="bg-white w-full max-w-xs rounded-xl p-6 relative">
         <button onclick="closeInstructorEditModal()" class="absolute top-4 right-4 text-gray-400" title="닫기"><i class="fas fa-times"></i></button>
-        <h3 class="text-lg sm:text-xl font-bold mb-4 text-gray-800" id="instructor-edit-title">담당 사범 수정</h3>
+        <h3 class="text-lg sm:text-xl font-bold mb-4 text-gray-800" id="instructor-edit-title">수업 사범 수정</h3>
         
         <div class="mb-4">
-            <label class="block text-sm font-bold text-gray-500 mb-2">담당 사범 이름</label>
+            <label class="block text-sm font-bold text-gray-500 mb-2">수업 사범 이름</label>
             <input type="text" id="instructor-edit-name" placeholder="이름 입력" class="w-full p-3 border rounded bg-gray-50 text-lg" onkeyup="if(event.key==='Enter') saveInstructorEdit()">
             <input type="hidden" id="instructor-edit-code">
         </div>
@@ -2216,8 +2216,8 @@
                         <p class="text-sm ${nameClass}">${instructorName}</p>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="editInstructor('${session.code}', '${window.instructors[session.code] || ''}')" class="text-blue-500 text-sm border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-50" title="담당 사범 이름을 수정합니다.">수정</button>
-                        ${instructorName !== '미지정' ? `<button onclick="deleteInstructor('${session.code}')" class="text-red-400 text-sm border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50" title="이 수업의 담당 사범 지정을 해제합니다.">삭제</button>` : ''}
+                        <button onclick="editInstructor('${session.code}', '${window.instructors[session.code] || ''}')" class="text-blue-500 text-sm border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-50" title="수업 사범 이름을 수정합니다.">수정</button>
+                        ${instructorName !== '미지정' ? `<button onclick="deleteInstructor('${session.code}')" class="text-red-400 text-sm border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50" title="이 수업의 사범 지정을 해제합니다.">삭제</button>` : ''}
                     </div>
                 </li>
             `;
@@ -2226,7 +2226,7 @@
 
     window.editInstructor = function(sessionCode, currentName) {
         const session = SESSIONS.find(s => s.code === sessionCode);
-        const sessionName = session ? session.name : '담당 사범 수정';
+        const sessionName = session ? session.name : '수업 사범 수정';
         
         document.getElementById('instructor-edit-title').innerText = sessionName;
         document.getElementById('instructor-edit-name').value = currentName;
@@ -2253,7 +2253,7 @@
             await dbHelper.put('instructors', instructorData);
             window.instructors[sessionCode] = newName;
             renderInstructorManagement();
-            showAlert('완료', '담당 사범 정보가 업데이트되었습니다.');
+            showAlert('완료', '수업 사범 정보가 업데이트되었습니다.');
             closeInstructorEditModal();
         } catch (error) { 
             console.error("Error updating instructor: ", error); 
@@ -2262,12 +2262,12 @@
     }
 
     window.deleteInstructor = async function(sessionCode) {
-        if (confirm('해당 수업의 담당 사범 지정을 삭제하시겠습니까?')) {
+        if (confirm('해당 수업의 사범 지정을 삭제하시겠습니까?')) {
             try {
                 await dbHelper.deleteItem('instructors', sessionCode);
                 delete window.instructors[sessionCode];
                 renderInstructorManagement();
-                alert('담당 사범 정보가 삭제되었습니다.');
+                alert('수업 사범 정보가 삭제되었습니다.');
             } catch (error) { console.error("Error deleting instructor: ", error); alert('삭제 중 오류가 발생했습니다.'); }
         }
     }
