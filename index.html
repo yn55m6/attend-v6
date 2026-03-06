@@ -3027,7 +3027,8 @@
             const updates = [];
 
             for (let member of window.members) {
-                if (!member.registeredAt) {
+                // [FIX] Check for any invalid date value, not just falsy ones.
+                if (!member.registeredAt || isNaN(new Date(member.registeredAt).getTime())) {
                     // Find first log
                     const memberLogs = window.logs.filter(l => String(l.memberId) === String(member.id));
                     if (memberLogs.length > 0) {
