@@ -149,8 +149,9 @@
 <!-- [NEW] Global Error Handler (For Debugging) -->
 <script>
     window.onerror = function(msg, url, line, col, error) {
-        // 스크립트 오류 발생 시 사용자에게 알림
-        alert("⚠️ 시스템 오류 발생:\n" + msg + "\n(라인: " + line + ")");
+        // [IMPROVE] 스크립트 오류 발생 시 사용자에게 친절한 메시지 표시
+        const friendlyMessage = `죄송합니다. 예상치 못한 시스템 오류가 발생했습니다. 😥\n\n앱이 정상적으로 동작하지 않을 수 있으니, 페이지를 새로고침 해주세요.\n\n(오류 정보: ${msg} at line ${line})`;
+        alert(friendlyMessage);
         return false;
     };
 </script>
@@ -1830,7 +1831,7 @@
         const currentYear = new Date().getFullYear();
         
         // Filter logs for current year
-        const yearlyLogs = allLogs.filter(log => log.date.startsWith(String(currentYear)));
+        const yearlyLogs = allLogs.filter(log => log && log.date && log.date.startsWith(String(currentYear)));
         
         if (yearlyLogs.length === 0) {
             container.innerHTML = `<p class="text-center text-gray-500 py-10">${currentYear}년 데이터가 아직 없습니다.</p>`;
