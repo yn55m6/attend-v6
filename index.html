@@ -3715,7 +3715,6 @@
                 }
             }).then(() => {
                 sessionStorage.setItem('sw_force_reloaded_v3', 'true');
-                alert('앱의 캐시를 강제로 초기화합니다. 확인을 누르면 페이지가 새로고침됩니다.');
                 window.location.reload();
             }).catch(error => {
                 console.error('Failed to unregister SW:', error);
