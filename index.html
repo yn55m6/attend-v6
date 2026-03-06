@@ -3206,7 +3206,10 @@
             await dbHelper.put('members', member);
 
             if (navigator.onLine && firebaseHelper.initFirebase()) {
-                await firebase.firestore().collection('members').doc(String(memberId)).update({ name: newName, phone: newPhone });
+                // [FIX] Only update the member on Firebase if it's not a pending (offline-created) member.
+                if (member.syncStatus !== 'pending') {
+                    await firebase.firestore().collection('members').doc(String(memberId)).update({ name: newName, phone: newPhone });
+                }
             }
 
             if (nameChanged) {
