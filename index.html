@@ -1564,9 +1564,10 @@
         const memberCounts = {};
         logsForMonth.forEach(log => {
             if (!memberCounts[log.memberId]) {
-                // [FIX] Use String comparison for ID matching
+                // [FIX] Always get the latest member info
                 const m = window.members.find(mem => String(mem.id) === String(log.memberId));
-                memberCounts[log.memberId] = { count: 0, name: log.memberName, phone: m ? m.phone : "" };
+                const currentName = m ? m.name : log.memberName; // Fallback to log's name if member is deleted
+                memberCounts[log.memberId] = { count: 0, name: currentName, phone: m ? m.phone : "" };
             }
             memberCounts[log.memberId].count++;
         });
@@ -1686,8 +1687,10 @@
         const individualWeekly = {};
         logsForMonth.forEach(log => {
             const week = getWeekOfMonth(log.date);
-            if (!individualWeekly[log.memberId]) {
-                individualWeekly[log.memberId] = { id: log.memberId, name: log.memberName, weeks: {1:0, 2:0, 3:0, 4:0, 5:0}, total: 0 };
+            if (!individualWeekly[log.memberId] && log.memberId) { // [FIX] Add guard for log.memberId
+                const m = window.members.find(mem => String(mem.id) === String(log.memberId));
+                const currentName = m ? m.name : log.memberName;
+                individualWeekly[log.memberId] = { id: log.memberId, name: currentName, weeks: {1:0, 2:0, 3:0, 4:0, 5:0}, total: 0 };
             }
             if (individualWeekly[log.memberId].weeks[week] !== undefined) individualWeekly[log.memberId].weeks[week]++;
             individualWeekly[log.memberId].total++;
@@ -1786,7 +1789,9 @@
             if (week === 0) return; // Ignore invalid weeks
 
             if (!memberWeeklyPresence[log.memberId]) {
-                memberWeeklyPresence[log.memberId] = { name: log.memberName, weeks: new Set() };
+                const m = window.members.find(mem => String(mem.id) === String(log.memberId));
+                const currentName = m ? m.name : log.memberName;
+                memberWeeklyPresence[log.memberId] = { name: currentName, weeks: new Set() };
             }
             memberWeeklyPresence[log.memberId].weeks.add(week);
         });
@@ -2079,7 +2084,9 @@
         const memberMonthlyPresence = {};
         yearlyLogs.forEach(log => {
             if (!memberMonthlyPresence[log.memberId]) {
-                memberMonthlyPresence[log.memberId] = { name: log.memberName, months: new Set() };
+                const m = allMembers.find(mem => String(mem.id) === String(log.memberId));
+                const currentName = m ? m.name : log.memberName;
+                memberMonthlyPresence[log.memberId] = { name: currentName, months: new Set() };
             }
             memberMonthlyPresence[log.memberId].months.add(log.date.substring(5, 7)); // "MM"
         });
@@ -2932,7 +2939,11 @@
         const logToDelete = window.logs.find(l => String(l.id) === String(logId));
         if (!logToDelete) return showAlert('오류', '삭제할 출석 기록을 찾을 수 없습니다.');
 
-        const confirmed = await requestConfirm('기록 삭제', `[${logToDelete.memberName}]님의\n${logToDelete.date} (${logToDelete.sessionName || '미분류'}) 출석 기록을 삭제하시겠습니까?`);
+        // [FIX] Get current member name for the confirmation dialog
+        const member = window.members.find(m => String(m.id) === String(logToDelete.memberId));
+        const currentMemberName = member ? member.name : logToDelete.memberName;
+
+        const confirmed = await requestConfirm('기록 삭제', `[${currentMemberName}]님의\n${logToDelete.date} (${logToDelete.sessionName || '미분류'}) 출석 기록을 삭제하시겠습니까?`);
         if (!confirmed) return;
 
         try {
@@ -2976,8 +2987,14 @@
             subtitle = `${selectedMonth}월 / 전체`;
         }
 
-        const attendees = [...new Set(sessionLogs.map(log => log.memberName))].sort((a, b) => a.localeCompare(b));
-        
+        // [FIX] Get current member names from memberId
+        const attendeeIds = [...new Set(sessionLogs.map(log => log.memberId))];
+        const attendees = attendeeIds.map(id => {
+            const member = window.members.find(m => String(m.id) === String(id));
+            // Fallback to a name from the logs if member was deleted
+            return member ? member.name : (sessionLogs.find(l => String(l.memberId) === String(id))?.memberName || '알수없음');
+        }).sort((a, b) => a.localeCompare(b));
+
         document.getElementById('session-attendees-title').innerText = `[${sessionName}] 참석자`;
         document.getElementById('session-attendees-subtitle').innerText = `${subtitle} / 총 ${attendees.length}명 (중복제외)`;
         
@@ -3236,37 +3253,15 @@
                 }
             }
 
-            if (nameChanged) {
-                const logsToUpdate = window.logs.filter(l => String(l.memberId) === String(memberId));
-                if (logsToUpdate.length > 0) {
-                    // 1. Update name in all relevant in-memory log objects
-                    logsToUpdate.forEach(l => l.memberName = newName);
-                    // 2. Update all these logs in local IndexedDB
-                    await dbHelper.bulkPut('logs', logsToUpdate);
-                    
-                    // 3. Update logs in Firebase, but only those that are not pending sync
-                    if (navigator.onLine && firebaseHelper.initFirebase()) {
-                        const syncedLogsToUpdate = logsToUpdate.filter(l => l.syncStatus !== 'pending');
-                        if (syncedLogsToUpdate.length > 0) {
-                            // Chunk updates to avoid Firebase 500-write limit per batch
-                            for (let i = 0; i < syncedLogsToUpdate.length; i += 500) {
-                                const chunk = syncedLogsToUpdate.slice(i, i + 500);
-                                const batch = firebase.firestore().batch();
-                                chunk.forEach(log => {
-                                    if (log.id) { // Safety check
-                                        batch.update(firebase.firestore().collection('logs').doc(String(log.id)), { memberName: newName });
-                                    }
-                                });
-                                await batch.commit();
-                            }
-                        }
-                    }
-                }
-            }
+            // [REFACTOR] The logic to update all past logs when a name changes has been removed.
+            // This prevents errors and significantly improves performance.
+            // Reports will now fetch the current member name dynamically.
             showSyncStatus('synced', '업데이트 완료');
             showAlert('완료', '회원 정보가 성공적으로 수정되었습니다.');
             closeMemberEditModal();
             renderMembers(); renderMemberGrid(); updateCheckUserSelect();
+            // If the name was changed while viewing reports, refresh the report to show the new name.
+            if (nameChanged && currentMode === 'reports') showReports(currentActiveReportTabId);
         } catch (error) {
             console.error("Error saving member edit:", error);
             showAlert('오류', '회원 정보 수정 중 오류가 발생했습니다.');
