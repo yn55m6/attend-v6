@@ -2443,14 +2443,14 @@
             let targetMember = null;
 
             if (candidates.length === 0) {
-                const newMemberData = { name: inputName, phone: inputPhone || "0000", registeredAt: new Date().toISOString() };
+                const newMemberData = { name: inputName, phone: inputPhone || "0000", registeredAt: new Date().toISOString(), syncStatus: 'pending' };
                 const newId = await dbHelper.add('members', newMemberData);
                 targetMember = { id: newId, ...newMemberData };
                 window.members.push(targetMember);
                 newMemberCount++;
             } else if (candidates.length === 1) {
                 if (inputPhone && candidates[0].phone !== "0000" && candidates[0].phone !== inputPhone) {
-                    const newMemberData = { name: inputName, phone: inputPhone, registeredAt: new Date().toISOString() };
+                    const newMemberData = { name: inputName, phone: inputPhone, registeredAt: new Date().toISOString(), syncStatus: 'pending' };
                     const newId = await dbHelper.add('members', newMemberData);
                     targetMember = { id: newId, ...newMemberData };
                     window.members.push(targetMember);
@@ -2465,7 +2465,7 @@
             } else {
                 if (inputPhone) targetMember = candidates.find(m => m.phone === inputPhone);
                 if (!targetMember && inputPhone) {
-                    const newMemberData = { name: inputName, phone: inputPhone, registeredAt: new Date().toISOString() };
+                    const newMemberData = { name: inputName, phone: inputPhone, registeredAt: new Date().toISOString(), syncStatus: 'pending' };
                     const newId = await dbHelper.add('members', newMemberData);
                     targetMember = { id: newId, ...newMemberData };
                     window.members.push(targetMember);
@@ -2485,7 +2485,8 @@
                         date: dateStr, 
                         sessionCode: session.code, 
                         sessionName: session.name, 
-                        timestamp: new Date().toLocaleString() + " (일괄입력)"
+                        timestamp: new Date().toLocaleString() + " (일괄입력)",
+                        syncStatus: 'pending' // Always mark as pending for the sync cycle
                     };
                     const newLogId = await dbHelper.add('logs', newLogData);
                     newLogData.id = newLogId;
@@ -2511,6 +2512,11 @@
         renderMembers();
         updateCheckUserSelect();
         renderMemberGrid();
+
+        // Trigger sync if online to upload the new pending data
+        if (navigator.onLine) {
+            syncPendingData();
+        }
     }
 
     // [NEW] Helper for Check Modal Session Options
