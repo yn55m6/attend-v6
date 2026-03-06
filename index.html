@@ -1515,7 +1515,7 @@
         const sessionWeeklyCounts = {};
         logsForMonth.forEach(log => {
             const week = getWeekOfMonth(log.date);
-            const sessionName = log.sessionName;
+            const sessionName = log.sessionName || '미분류';
             if (!sessionWeeklyCounts[sessionName]) {
                 sessionWeeklyCounts[sessionName] = { name: sessionName, weeks: {1:0, 2:0, 3:0, 4:0, 5:0}, total: 0 };
             }
