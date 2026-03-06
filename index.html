@@ -3099,7 +3099,13 @@
               )
             : window.members;
 
-        countSpan.innerText = `(${filteredMembers.length} / 총 ${window.members.length}명)`;
+        // [IMPROVE] Make member count display more intuitive
+        const totalCount = window.members.length;
+        if (filteredMembers.length < totalCount) {
+            countSpan.innerText = `(${filteredMembers.length}명 조회 / 총 ${totalCount}명)`;
+        } else {
+            countSpan.innerText = `(총 ${totalCount}명)`;
+        }
         
         if (filteredMembers.length === 0) {
             list.innerHTML = `<li class="text-center text-gray-400 py-8">${trimmedQuery ? '검색 결과가 없습니다.' : '등록된 회원이 없습니다.'}</li>`;
