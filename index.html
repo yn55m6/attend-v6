@@ -226,52 +226,54 @@
         </header>
 
         <!-- Page: Member Attendance (New) -->
-        <section id="page-member-attendance" class="page h-[calc(100vh-72px)] flex flex-col bg-white">
-            <!-- Fixed Top Area -->
-            <div class="flex-none p-6 text-center">
-                <div class="flex justify-between items-start mb-4">
-                    <div class="text-left">
-                        <h2 class="text-xl sm:text-2xl font-bold text-gray-800 mb-2 leading-relaxed">허리는 세우고,<br>가슴은 펴고,<br>고개는 들자!</h2>
-                        <p id="current-session-info" class="text-theme-600 font-bold text-lg sm:text-xl">현재 진행 중인 수업을 찾는 중...</p>
-                    </div>
-                    <div id="member-view-qr-container" class="flex-shrink-0 ml-4">
-                        <!-- QR code will be rendered here for members to scan -->
-                    </div>
-                </div>
-
-                <!-- [NEW] Date & Session Selection for Member Mode -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 mb-6 max-w-md mx-auto px-2">
-                    <div class="text-left">
-                        <label for="member-mode-date" class="block text-xs sm:text-sm font-bold text-gray-500 mb-2">출석 날짜 <span id="member-mode-day" class="text-theme-500 font-semibold"></span></label>
-                        <input type="date" id="member-mode-date" class="w-full p-3 sm:p-4 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm sm:text-base font-bold text-gray-700 focus:border-theme-300 outline-none" onchange="updateMemberModeSessionOptions()">
-                    </div>
-                    <div class="text-left">
-                        <label for="member-mode-session" class="block text-xs sm:text-sm font-bold text-gray-500 mb-2">수업(차수) 선택</label>
-                        <div class="flex gap-2">
-                            <select id="member-mode-session" class="flex-1 p-3 sm:p-4 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm sm:text-base font-bold text-gray-700 focus:border-theme-300 outline-none"></select>
-                            <button id="btn-sync-member" onclick="syncMemberModeToNow()" class="p-3 sm:p-4 bg-white border-2 border-gray-200 rounded-xl text-theme-500 hover:bg-theme-50 transition shadow-sm" title="현재 시간으로 수업 갱신">
-                                <i class="fas fa-sync-alt" id="icon-sync-member"></i>
-                            </button>
+        <section id="page-member-attendance" class="page">
+            <div class="h-[calc(100vh-112px)] flex flex-col bg-white rounded-2xl shadow-lg overflow-hidden">
+                <!-- Fixed Top Area -->
+                <div class="flex-none p-6 text-center">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="text-left">
+                            <h2 class="text-xl sm:text-2xl font-bold text-gray-800 mb-2 leading-relaxed">허리는 세우고,<br>가슴은 펴고,<br>고개는 들자!</h2>
+                            <p id="current-session-info" class="text-theme-600 font-bold text-lg sm:text-xl">현재 진행 중인 수업을 찾는 중...</p>
+                        </div>
+                        <div id="member-view-qr-container" class="flex-shrink-0 ml-4">
+                            <!-- QR code will be rendered here for members to scan -->
                         </div>
                     </div>
-                </div>
-                
-                <div class="relative mb-4 group">
-                    <label for="member-search-input" class="sr-only">회원 이름 검색</label>
-                    <i class="fas fa-search absolute left-5 top-1/2 -translate-y-1/2 text-gray-300 text-xl sm:text-2xl pointer-events-none" aria-hidden="true"></i>
-                    <input type="text" id="member-search-input" oninput="handleMemberSearch(this)" 
-                           placeholder="이름 또는 초성 검색 (예: ㄱㄷㅎ)" 
-                           class="w-full p-4 sm:p-5 pl-14 pr-12 text-xl sm:text-2xl border-2 border-theme-200 rounded-2xl focus:border-theme-500 outline-none shadow-inner bg-white">
-                    <button id="member-search-clear-btn" onclick="clearMemberSearch()" class="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden" title="검색어 지우기">
-                        <i class="fas fa-times-circle text-xl"></i>
-                    </button>
-                </div>
-            </div>
 
-            <!-- Scrollable Grid Area -->
-            <div class="flex-1 overflow-y-auto px-6 pb-6">
-                <div id="member-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-4">
-                    <!-- Member buttons will be rendered here -->
+                    <!-- [NEW] Date & Session Selection for Member Mode -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 mb-6 max-w-md mx-auto px-2">
+                        <div class="text-left">
+                            <label for="member-mode-date" class="block text-xs sm:text-sm font-bold text-gray-500 mb-2">출석 날짜 <span id="member-mode-day" class="text-theme-500 font-semibold"></span></label>
+                            <input type="date" id="member-mode-date" class="w-full p-3 sm:p-4 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm sm:text-base font-bold text-gray-700 focus:border-theme-300 outline-none" onchange="updateMemberModeSessionOptions()">
+                        </div>
+                        <div class="text-left">
+                            <label for="member-mode-session" class="block text-xs sm:text-sm font-bold text-gray-500 mb-2">수업(차수) 선택</label>
+                            <div class="flex gap-2">
+                                <select id="member-mode-session" class="flex-1 p-3 sm:p-4 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm sm:text-base font-bold text-gray-700 focus:border-theme-300 outline-none"></select>
+                                <button id="btn-sync-member" onclick="syncMemberModeToNow()" class="p-3 sm:p-4 bg-white border-2 border-gray-200 rounded-xl text-theme-500 hover:bg-theme-50 transition shadow-sm" title="현재 시간으로 수업 갱신">
+                                    <i class="fas fa-sync-alt" id="icon-sync-member"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="relative mb-4 group">
+                        <label for="member-search-input" class="sr-only">회원 이름 검색</label>
+                        <i class="fas fa-search absolute left-5 top-1/2 -translate-y-1/2 text-gray-300 text-xl sm:text-2xl pointer-events-none" aria-hidden="true"></i>
+                        <input type="text" id="member-search-input" oninput="handleMemberSearch(this)" 
+                               placeholder="이름 또는 초성 검색 (예: ㄱㄷㅎ)" 
+                               class="w-full p-4 sm:p-5 pl-14 pr-12 text-xl sm:text-2xl border-2 border-theme-200 rounded-2xl focus:border-theme-500 outline-none shadow-inner bg-white">
+                        <button id="member-search-clear-btn" onclick="clearMemberSearch()" class="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden" title="검색어 지우기">
+                            <i class="fas fa-times-circle text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Scrollable Grid Area -->
+                <div class="flex-1 overflow-y-auto px-6 pb-6">
+                    <div id="member-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-4">
+                        <!-- Member buttons will be rendered here -->
+                    </div>
                 </div>
             </div>
         </section>
