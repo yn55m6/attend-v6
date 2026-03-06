@@ -51,6 +51,7 @@
 -   **페이지 전환:** `switchPage(element, pageId)` 함수가 담당. `display: none/block` 스타일을 직접 제어하여 페이지를 전환하고, 하단 네비게이션의 활성 상태를 변경.
 -   **동적 렌더링:** `renderMembers()`, `showReports()` 등의 함수가 `window.members`, `window.logs` 전역 변수를 기반으로 `innerHTML`을 사용하여 UI를 동적으로 생성.
 -   **상태 관리:** 별도의 상태 관리 라이브러리 없이, 전역 변수와 DOM을 직접 조작하는 방식으로 구현.
+-   **일괄 입력 페이지:** `initBulkAttendancePage()` 함수를 통해 페이지 진입 시 오늘 날짜와 현재 수업을 자동으로 설정. `processBulkInput()` 함수가 텍스트를 파싱하여 출석을 일괄 처리.
 
 ## 4. PWA 및 캐싱 전략 (`sw.js`)
 
