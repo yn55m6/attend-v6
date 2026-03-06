@@ -1271,6 +1271,7 @@
 
     // --- 3. Helper Functions ---
     window.getWeekOfMonth = function(dateStr) {
+        if (!dateStr) return 0; // [FIX] Prevent error on undefined date
         // [FIX] Parse date string as local time to avoid timezone shifts
         const [y, m, d] = dateStr.split('-').map(Number);
         const date = new Date(y, m - 1, d);
