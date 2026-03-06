@@ -1732,18 +1732,38 @@
 
         // 3. Render the report
         const selectedMonth = document.getElementById('report-month-filter').value;
-        const [year, month] = selectedMonth.split('-');
+        const [yearStr, monthStr] = selectedMonth.split('-');
+        const year = parseInt(yearStr);
+        const month = parseInt(monthStr);
         
         let html = `<div class="card">
-                        <h3 class="font-bold text-lg mb-4">🏅 주간 개근 현황 (${year}년 ${parseInt(month)}월)</h3>`;
+                        <h3 class="font-bold text-lg mb-4">🏅 주간 개근 현황 (${year}년 ${month}월)</h3>`;
 
-        const groupInfo = [
-            { count: 5, title: '💎 5주 개근 (퍼펙트!)', icon: 'fa-gem text-cyan-500' },
-            { count: 4, title: '👑 4주 개근 (모든 주 출석)', icon: 'fa-crown text-yellow-500' },
-            { count: 3, title: '🥈 3주 개근 (1주 결석)', icon: 'fa-medal text-gray-400' },
-            { count: 2, title: '🥉 2주 개근 (2주 결석)', icon: 'fa-award text-orange-400' },
-            { count: 1, title: '👏 1주 출석', icon: 'fa-star text-blue-400' }
-        ];
+        // [FIX] Dynamically generate titles based on the number of weeks in the month
+        const getTotalWeeksInMonth = (y, m) => {
+            const lastDay = new Date(y, m, 0).getDate();
+            const dateStr = `${y}-${String(m).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+            return getWeekOfMonth(dateStr);
+        };
+        const totalWeeks = getTotalWeeksInMonth(year, month);
+
+        let groupInfo;
+        if (totalWeeks === 5) {
+            groupInfo = [
+                { count: 5, title: '💎 5주 개근 (모든 주 출석)', icon: 'fa-gem text-cyan-500' },
+                { count: 4, title: '👑 4주 개근 (1주 결석)', icon: 'fa-crown text-yellow-500' },
+                { count: 3, title: '🥈 3주 개근 (2주 결석)', icon: 'fa-medal text-gray-400' },
+                { count: 2, title: '🥉 2주 개근 (3주 결석)', icon: 'fa-award text-orange-400' },
+                { count: 1, title: '👏 1주 출석', icon: 'fa-star text-blue-400' }
+            ];
+        } else { // Assuming 4 weeks
+            groupInfo = [
+                { count: 4, title: '👑 4주 개근 (모든 주 출석)', icon: 'fa-crown text-yellow-500' },
+                { count: 3, title: '🥈 3주 개근 (1주 결석)', icon: 'fa-medal text-gray-400' },
+                { count: 2, title: '🥉 2주 개근 (2주 결석)', icon: 'fa-award text-orange-400' },
+                { count: 1, title: '👏 1주 출석', icon: 'fa-star text-blue-400' }
+            ];
+        }
 
         const hasData = groupInfo.some(group => attendanceGroups[group.count].length > 0);
         if (!hasData) {
