@@ -3202,8 +3202,12 @@
         // [NEW] Populate registration date
         const regDateInput = document.getElementById('member-edit-registeredAt');
         if (member.registeredAt && !isNaN(new Date(member.registeredAt))) {
-            // Convert ISO string to YYYY-MM-DD format
-            regDateInput.value = new Date(member.registeredAt).toISOString().split('T')[0];
+            // [FIX] Convert ISO string to YYYY-MM-DD in local timezone to prevent off-by-one day errors.
+            const localDate = new Date(member.registeredAt);
+            const year = localDate.getFullYear();
+            const month = String(localDate.getMonth() + 1).padStart(2, '0');
+            const day = String(localDate.getDate()).padStart(2, '0');
+            regDateInput.value = `${year}-${month}-${day}`;
         } else {
             regDateInput.value = ''; // Clear if no valid date
         }
