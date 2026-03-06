@@ -1753,7 +1753,7 @@
                 const members = attendanceGroups[group.count];
                 if (members.length > 0) {
                     html += `<div class="mb-6">
-                                <h4 class="font-bold text-gray-800 mb-2 border-b pb-2"><i class="fas ${group.icon} mr-2"></i>${group.title}</h4>
+                                <h4 class="font-bold text-gray-800 mb-2 border-b pb-2"><i class="fas ${group.icon} mr-2"></i>${group.title} <span class="text-theme-600 font-semibold">(${members.length}명)</span></h4>
                                 <p class="text-sm text-gray-600">${members.join(', ')}</p>
                              </div>`;
                 }
