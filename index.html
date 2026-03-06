@@ -769,6 +769,25 @@
     </div>
 </div>
 
+<!-- [NEW] Modal: Member Edit -->
+<div id="member-edit-modal" class="fixed inset-0 bg-black bg-opacity-90 z-50 hidden flex flex-col justify-center items-center p-6 no-print">
+    <div class="bg-white w-full max-w-xs rounded-xl p-6 relative">
+        <button onclick="closeMemberEditModal()" class="absolute top-4 right-4 text-gray-400" title="닫기"><i class="fas fa-times"></i></button>
+        <h3 class="text-lg sm:text-xl font-bold mb-4 text-gray-800">회원 정보 수정</h3>
+        
+        <div class="mb-4">
+            <label class="block text-sm font-bold text-gray-500 mb-2">이름</label>
+            <input type="text" id="member-edit-name" placeholder="이름 (필수)" class="w-full p-3 border rounded bg-gray-50 text-lg">
+            <input type="hidden" id="member-edit-id">
+        </div>
+        <div class="mb-4">
+            <label class="block text-sm font-bold text-gray-500 mb-2">전화번호 뒷자리</label>
+            <input type="tel" id="member-edit-phone" placeholder="예: 1234 (생략가능)" class="w-full p-3 border rounded bg-gray-50 text-lg">
+        </div>
+        <button onclick="saveMemberEdit()" class="btn-primary" title="수정한 회원 정보를 저장합니다.">저장하기</button>
+    </div>
+</div>
+
 <!-- [NEW] Custom Alert Modal -->
 <div id="custom-alert-modal" class="fixed inset-0 bg-black bg-opacity-90 z-[110] hidden flex flex-col justify-center items-center p-6 no-print">
     <div class="bg-white w-full max-w-sm rounded-2xl p-6 text-center shadow-2xl transform transition-all scale-100">
@@ -2787,7 +2806,10 @@
                     </div>
                     <p class="text-sm text-gray-400">${m.phone}</p>
                 </div>
-                <button onclick="deleteMember('${m.id}')" class="text-red-400 text-sm border border-red-200 px-3 py-2 rounded-lg hover:bg-red-50 ml-2" title="이 회원을 목록에서 영구적으로 삭제합니다.">삭제</button>
+                <div class="flex gap-2 ml-2 flex-shrink-0">
+                    <button onclick="openMemberEditModal('${m.id}')" class="text-blue-500 text-sm border border-blue-200 px-3 py-2 rounded-lg hover:bg-blue-50" title="회원 정보를 수정합니다.">수정</button>
+                    <button onclick="deleteMember('${m.id}')" class="text-red-400 text-sm border border-red-200 px-3 py-2 rounded-lg hover:bg-red-50" title="이 회원을 목록에서 영구적으로 삭제합니다.">삭제</button>
+                </div>
             </li>`;
         });
     }
@@ -2845,6 +2867,77 @@
         } catch (error) {
             console.error("Error deleting member:", error);
             showAlert('삭제 오류', `회원 삭제 중 오류가 발생했습니다: ${error.message}`);
+            showSyncStatus('online');
+        }
+    }
+
+    // --- [NEW] Member Edit Logic ---
+    window.openMemberEditModal = function(memberId) {
+        const member = window.members.find(m => String(m.id) === String(memberId));
+        if (!member) {
+            return showAlert('오류', '회원 정보를 찾을 수 없습니다.');
+        }
+
+        document.getElementById('member-edit-id').value = member.id;
+        document.getElementById('member-edit-name').value = member.name;
+        document.getElementById('member-edit-phone').value = member.phone === '0000' ? '' : member.phone;
+        
+        document.getElementById('member-edit-modal').classList.remove('hidden');
+        document.getElementById('member-edit-name').focus();
+    }
+
+    window.closeMemberEditModal = function() {
+        document.getElementById('member-edit-modal').classList.add('hidden');
+    }
+
+    window.saveMemberEdit = async function() {
+        const memberId = document.getElementById('member-edit-id').value;
+        const newName = document.getElementById('member-edit-name').value.trim();
+        let newPhone = document.getElementById('member-edit-phone').value.trim();
+
+        if (!newName) return showAlert('알림', '이름은 비워둘 수 없습니다.');
+        if (!newPhone) newPhone = '0000';
+
+        const member = window.members.find(m => String(m.id) === String(memberId));
+        if (!member) return showAlert('오류', '수정할 회원을 찾을 수 없습니다.');
+
+        const isDuplicate = window.members.some(m => String(m.id) !== String(memberId) && m.name === newName && m.phone === newPhone);
+        if (isDuplicate) return showAlert('중복 오류', '동일한 이름과 전화번호를 가진 회원이 이미 존재합니다.');
+
+        const oldName = member.name;
+        const nameChanged = member.name !== newName;
+
+        member.name = newName;
+        member.phone = newPhone;
+
+        try {
+            showSyncStatus('syncing', '정보 업데이트 중...');
+            await dbHelper.put('members', member);
+
+            if (navigator.onLine && firebaseHelper.initFirebase()) {
+                await firebase.firestore().collection('members').doc(String(memberId)).update({ name: newName, phone: newPhone });
+            }
+
+            if (nameChanged) {
+                const logsToUpdate = window.logs.filter(l => String(l.memberId) === String(memberId));
+                if (logsToUpdate.length > 0) {
+                    logsToUpdate.forEach(l => l.memberName = newName);
+                    await dbHelper.bulkPut('logs', logsToUpdate);
+                    if (navigator.onLine && firebaseHelper.initFirebase()) {
+                        const batch = firebase.firestore().batch();
+                        logsToUpdate.forEach(log => batch.update(firebase.firestore().collection('logs').doc(String(log.id)), { memberName: newName }));
+                        await batch.commit();
+                    }
+                }
+            }
+            showSyncStatus('synced', '업데이트 완료');
+            showAlert('완료', '회원 정보가 성공적으로 수정되었습니다.');
+            closeMemberEditModal();
+            renderMembers(); renderMemberGrid(); updateCheckUserSelect();
+        } catch (error) {
+            console.error("Error saving member edit:", error);
+            showAlert('오류', '회원 정보 수정 중 오류가 발생했습니다.');
+            member.name = oldName; // Revert in-memory change on failure
             showSyncStatus('online');
         }
     }
