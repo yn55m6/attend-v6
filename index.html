@@ -226,49 +226,51 @@
         </header>
 
         <!-- Page: Member Attendance (New) -->
-        <section id="page-member-attendance" class="page h-[calc(100vh-72px)] flex flex-col">
-            <div class="card text-center flex-1 flex flex-col overflow-hidden p-0">
-                <div class="flex-none p-6">
-                    <div class="flex justify-between items-start mb-4">
-                        <div class="text-left">
-                            <h2 class="text-xl sm:text-2xl font-bold text-gray-800 mb-2 leading-relaxed">허리는 세우고,<br>가슴은 펴고,<br>고개는 들자!</h2>
-                            <p id="current-session-info" class="text-theme-600 font-bold text-lg sm:text-xl">현재 진행 중인 수업을 찾는 중...</p>
-                        </div>
-                        <div id="member-view-qr-container" class="flex-shrink-0 ml-4">
-                            <!-- QR code will be rendered here for members to scan -->
-                        </div>
+        <section id="page-member-attendance" class="page h-[calc(100vh-72px)] flex flex-col bg-white">
+            <!-- Fixed Top Area -->
+            <div class="flex-none p-6 text-center">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="text-left">
+                        <h2 class="text-xl sm:text-2xl font-bold text-gray-800 mb-2 leading-relaxed">허리는 세우고,<br>가슴은 펴고,<br>고개는 들자!</h2>
+                        <p id="current-session-info" class="text-theme-600 font-bold text-lg sm:text-xl">현재 진행 중인 수업을 찾는 중...</p>
                     </div>
-
-                    <!-- [NEW] Date & Session Selection for Member Mode -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 mb-6 max-w-md mx-auto px-2">
-                        <div class="text-left">
-                            <label for="member-mode-date" class="block text-xs sm:text-sm font-bold text-gray-500 mb-2">출석 날짜 <span id="member-mode-day" class="text-theme-500 font-semibold"></span></label>
-                            <input type="date" id="member-mode-date" class="w-full p-3 sm:p-4 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm sm:text-base font-bold text-gray-700 focus:border-theme-300 outline-none" onchange="updateMemberModeSessionOptions()">
-                        </div>
-                        <div class="text-left">
-                            <label for="member-mode-session" class="block text-xs sm:text-sm font-bold text-gray-500 mb-2">수업(차수) 선택</label>
-                            <div class="flex gap-2">
-                                <select id="member-mode-session" class="flex-1 p-3 sm:p-4 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm sm:text-base font-bold text-gray-700 focus:border-theme-300 outline-none"></select>
-                                <button id="btn-sync-member" onclick="syncMemberModeToNow()" class="p-3 sm:p-4 bg-white border-2 border-gray-200 rounded-xl text-theme-500 hover:bg-theme-50 transition shadow-sm" title="현재 시간으로 수업 갱신">
-                                    <i class="fas fa-sync-alt" id="icon-sync-member"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="relative mb-4 group">
-                        <label for="member-search-input" class="sr-only">회원 이름 검색</label>
-                        <i class="fas fa-search absolute left-5 top-1/2 -translate-y-1/2 text-gray-300 text-xl sm:text-2xl pointer-events-none" aria-hidden="true"></i>
-                        <input type="text" id="member-search-input" oninput="handleMemberSearch(this)" 
-                               placeholder="이름 또는 초성 검색 (예: ㄱㄷㅎ)" 
-                               class="w-full p-4 sm:p-5 pl-14 pr-12 text-xl sm:text-2xl border-2 border-theme-200 rounded-2xl focus:border-theme-500 outline-none shadow-inner bg-white">
-                        <button id="member-search-clear-btn" onclick="clearMemberSearch()" class="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden" title="검색어 지우기">
-                            <i class="fas fa-times-circle text-xl"></i>
-                        </button>
+                    <div id="member-view-qr-container" class="flex-shrink-0 ml-4">
+                        <!-- QR code will be rendered here for members to scan -->
                     </div>
                 </div>
 
-                <div id="member-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-4 flex-1 overflow-y-auto px-6 pb-6">
+                <!-- [NEW] Date & Session Selection for Member Mode -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 mb-6 max-w-md mx-auto px-2">
+                    <div class="text-left">
+                        <label for="member-mode-date" class="block text-xs sm:text-sm font-bold text-gray-500 mb-2">출석 날짜 <span id="member-mode-day" class="text-theme-500 font-semibold"></span></label>
+                        <input type="date" id="member-mode-date" class="w-full p-3 sm:p-4 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm sm:text-base font-bold text-gray-700 focus:border-theme-300 outline-none" onchange="updateMemberModeSessionOptions()">
+                    </div>
+                    <div class="text-left">
+                        <label for="member-mode-session" class="block text-xs sm:text-sm font-bold text-gray-500 mb-2">수업(차수) 선택</label>
+                        <div class="flex gap-2">
+                            <select id="member-mode-session" class="flex-1 p-3 sm:p-4 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm sm:text-base font-bold text-gray-700 focus:border-theme-300 outline-none"></select>
+                            <button id="btn-sync-member" onclick="syncMemberModeToNow()" class="p-3 sm:p-4 bg-white border-2 border-gray-200 rounded-xl text-theme-500 hover:bg-theme-50 transition shadow-sm" title="현재 시간으로 수업 갱신">
+                                <i class="fas fa-sync-alt" id="icon-sync-member"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="relative mb-4 group">
+                    <label for="member-search-input" class="sr-only">회원 이름 검색</label>
+                    <i class="fas fa-search absolute left-5 top-1/2 -translate-y-1/2 text-gray-300 text-xl sm:text-2xl pointer-events-none" aria-hidden="true"></i>
+                    <input type="text" id="member-search-input" oninput="handleMemberSearch(this)" 
+                           placeholder="이름 또는 초성 검색 (예: ㄱㄷㅎ)" 
+                           class="w-full p-4 sm:p-5 pl-14 pr-12 text-xl sm:text-2xl border-2 border-theme-200 rounded-2xl focus:border-theme-500 outline-none shadow-inner bg-white">
+                    <button id="member-search-clear-btn" onclick="clearMemberSearch()" class="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden" title="검색어 지우기">
+                        <i class="fas fa-times-circle text-xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Scrollable Grid Area -->
+            <div class="flex-1 overflow-y-auto px-6 pb-6">
+                <div id="member-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-4">
                     <!-- Member buttons will be rendered here -->
                 </div>
             </div>
@@ -771,6 +773,25 @@
         </div>
         
         <button onclick="saveInstructorEdit()" class="btn-primary" title="수정한 사범 이름을 저장합니다.">저장하기</button>
+    </div>
+</div>
+
+<!-- [NEW] Modal: Member Edit -->
+<div id="member-edit-modal" class="fixed inset-0 bg-black bg-opacity-90 z-50 hidden flex flex-col justify-center items-center p-6 no-print">
+    <div class="bg-white w-full max-w-xs rounded-xl p-6 relative">
+        <button onclick="closeMemberEditModal()" class="absolute top-4 right-4 text-gray-400" title="닫기"><i class="fas fa-times"></i></button>
+        <h3 class="text-lg sm:text-xl font-bold mb-4 text-gray-800">회원 정보 수정</h3>
+        
+        <div class="mb-4">
+            <label class="block text-sm font-bold text-gray-500 mb-2">이름</label>
+            <input type="text" id="member-edit-name" placeholder="이름 (필수)" class="w-full p-3 border rounded bg-gray-50 text-lg">
+            <input type="hidden" id="member-edit-id">
+        </div>
+        <div class="mb-4">
+            <label class="block text-sm font-bold text-gray-500 mb-2">전화번호 뒷자리</label>
+            <input type="tel" id="member-edit-phone" placeholder="예: 1234 (생략가능)" class="w-full p-3 border rounded bg-gray-50 text-lg">
+        </div>
+        <button onclick="saveMemberEdit()" class="btn-primary" title="수정한 회원 정보를 저장합니다.">저장하기</button>
     </div>
 </div>
 
@@ -2813,7 +2834,10 @@
                     </div>
                     <p class="text-sm text-gray-400">${m.phone}</p>
                 </div>
-                <button onclick="deleteMember('${m.id}')" class="text-red-400 text-sm border border-red-200 px-3 py-2 rounded-lg hover:bg-red-50 ml-2" title="이 회원을 목록에서 영구적으로 삭제합니다.">삭제</button>
+                <div class="flex gap-2 ml-2 flex-shrink-0">
+                    <button onclick="openMemberEditModal('${m.id}')" class="text-blue-500 text-sm border border-blue-200 px-3 py-2 rounded-lg hover:bg-blue-50" title="회원 정보를 수정합니다.">수정</button>
+                    <button onclick="deleteMember('${m.id}')" class="text-red-400 text-sm border border-red-200 px-3 py-2 rounded-lg hover:bg-red-50" title="이 회원을 목록에서 영구적으로 삭제합니다.">삭제</button>
+                </div>
             </li>`;
         });
     }
@@ -2871,6 +2895,77 @@
         } catch (error) {
             console.error("Error deleting member:", error);
             showAlert('삭제 오류', `회원 삭제 중 오류가 발생했습니다: ${error.message}`);
+            showSyncStatus('online');
+        }
+    }
+
+    // --- [NEW] Member Edit Logic ---
+    window.openMemberEditModal = function(memberId) {
+        const member = window.members.find(m => String(m.id) === String(memberId));
+        if (!member) {
+            return showAlert('오류', '회원 정보를 찾을 수 없습니다.');
+        }
+
+        document.getElementById('member-edit-id').value = member.id;
+        document.getElementById('member-edit-name').value = member.name;
+        document.getElementById('member-edit-phone').value = member.phone === '0000' ? '' : member.phone;
+        
+        document.getElementById('member-edit-modal').classList.remove('hidden');
+        document.getElementById('member-edit-name').focus();
+    }
+
+    window.closeMemberEditModal = function() {
+        document.getElementById('member-edit-modal').classList.add('hidden');
+    }
+
+    window.saveMemberEdit = async function() {
+        const memberId = document.getElementById('member-edit-id').value;
+        const newName = document.getElementById('member-edit-name').value.trim();
+        let newPhone = document.getElementById('member-edit-phone').value.trim();
+
+        if (!newName) return showAlert('알림', '이름은 비워둘 수 없습니다.');
+        if (!newPhone) newPhone = '0000';
+
+        const member = window.members.find(m => String(m.id) === String(memberId));
+        if (!member) return showAlert('오류', '수정할 회원을 찾을 수 없습니다.');
+
+        const isDuplicate = window.members.some(m => String(m.id) !== String(memberId) && m.name === newName && m.phone === newPhone);
+        if (isDuplicate) return showAlert('중복 오류', '동일한 이름과 전화번호를 가진 회원이 이미 존재합니다.');
+
+        const oldName = member.name;
+        const nameChanged = member.name !== newName;
+
+        member.name = newName;
+        member.phone = newPhone;
+
+        try {
+            showSyncStatus('syncing', '정보 업데이트 중...');
+            await dbHelper.put('members', member);
+
+            if (navigator.onLine && firebaseHelper.initFirebase()) {
+                await firebase.firestore().collection('members').doc(String(memberId)).update({ name: newName, phone: newPhone });
+            }
+
+            if (nameChanged) {
+                const logsToUpdate = window.logs.filter(l => String(l.memberId) === String(memberId));
+                if (logsToUpdate.length > 0) {
+                    logsToUpdate.forEach(l => l.memberName = newName);
+                    await dbHelper.bulkPut('logs', logsToUpdate);
+                    if (navigator.onLine && firebaseHelper.initFirebase()) {
+                        const batch = firebase.firestore().batch();
+                        logsToUpdate.forEach(log => batch.update(firebase.firestore().collection('logs').doc(String(log.id)), { memberName: newName }));
+                        await batch.commit();
+                    }
+                }
+            }
+            showSyncStatus('synced', '업데이트 완료');
+            showAlert('완료', '회원 정보가 성공적으로 수정되었습니다.');
+            closeMemberEditModal();
+            renderMembers(); renderMemberGrid(); updateCheckUserSelect();
+        } catch (error) {
+            console.error("Error saving member edit:", error);
+            showAlert('오류', '회원 정보 수정 중 오류가 발생했습니다.');
+            member.name = oldName; // Revert in-memory change on failure
             showSyncStatus('online');
         }
     }
