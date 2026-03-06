@@ -1717,7 +1717,7 @@
         });
 
         // 2. Group members by the number of weeks they attended
-        const attendanceGroups = { 4: [], 3: [], 2: [], 1: [] };
+        const attendanceGroups = { 5: [], 4: [], 3: [], 2: [], 1: [] };
         Object.values(memberWeeklyPresence).forEach(member => {
             const weekCount = member.weeks.size;
             if (attendanceGroups[weekCount]) {
@@ -1738,6 +1738,7 @@
                         <h3 class="font-bold text-lg mb-4">🏅 주간 개근 현황 (${year}년 ${parseInt(month)}월)</h3>`;
 
         const groupInfo = [
+            { count: 5, title: '💎 5주 개근 (퍼펙트!)', icon: 'fa-gem text-cyan-500' },
             { count: 4, title: '👑 4주 개근 (모든 주 출석)', icon: 'fa-crown text-yellow-500' },
             { count: 3, title: '🥈 3주 개근 (1주 결석)', icon: 'fa-medal text-gray-400' },
             { count: 2, title: '🥉 2주 개근 (2주 결석)', icon: 'fa-award text-orange-400' },
@@ -2149,8 +2150,8 @@
                 headers = ['구분', '회원 목록'];
                 rows = [];
                 const attendanceGroups = reportDataCache.weeklyPerfectAttendance || {};
-                const groupTitles = { 4: '4주 개근', 3: '3주 개근', 2: '2주 개근', 1: '1주 출석' };
-                [4, 3, 2, 1].forEach(count => {
+                const groupTitles = { 5: '5주 개근', 4: '4주 개근', 3: '3주 개근', 2: '2주 개근', 1: '1주 출석' };
+                [5, 4, 3, 2, 1].forEach(count => {
                     if (attendanceGroups[count] && attendanceGroups[count].length > 0) {
                         rows.push([groupTitles[count], attendanceGroups[count].join('; ')]);
                     }
