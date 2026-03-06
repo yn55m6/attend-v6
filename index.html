@@ -1091,6 +1091,7 @@
     let reportDataCache = {}; // For CSV export
     let currentMode = ''; // 현재 활성화된 페이지 추적 (home, members, reports)
     let trendChartInstance = null; // Chart instance
+    let yearlyTrendChartInstance = null; // [NEW]
     let congestionChartInstance = null; // [NEW] Congestion Chart instance
     let undoTimer = null; // [NEW] Timer for the undo toast
 
@@ -2032,25 +2033,30 @@
         // 1. Total Attendance
         const totalAttendance = yearlyLogs.length;
         
-        // 2. Busiest Month
+        // 2. Busiest Month & Monthly data for chart
         const monthCounts = {};
+        for(let i=1; i<=12; i++) {
+            const monthKey = `${currentYear}-${String(i).padStart(2, '0')}`;
+            monthCounts[monthKey] = 0;
+        }
         yearlyLogs.forEach(log => {
             const month = log.date.substring(0, 7); // YYYY-MM
-            monthCounts[month] = (monthCounts[month] || 0) + 1;
+            if (monthCounts[month] !== undefined) {
+                monthCounts[month]++;
+            }
         });
         const busiestMonth = Object.entries(monthCounts).sort((a, b) => b[1] - a[1])[0];
-        const busiestMonthStr = busiestMonth ? `${parseInt(busiestMonth[0].split('-')[1])}월 (${busiestMonth[1]}명)` : '-';
+        const busiestMonthStr = busiestMonth && busiestMonth[1] > 0 ? `${parseInt(busiestMonth[0].split('-')[1])}월 (${busiestMonth[1]}건)` : '-';
 
-        // 3. Top Members (Attendance King)
+        // 3. Top Members (Attendance King) - Top 10
         const memberCounts = {};
         yearlyLogs.forEach(log => {
             memberCounts[log.memberId] = (memberCounts[log.memberId] || 0) + 1;
         });
         const topMembers = Object.entries(memberCounts)
             .sort((a, b) => b[1] - a[1])
-            .slice(0, 5)
+            .slice(0, 10) // Changed to Top 10
             .map(([id, count]) => {
-                // [FIX] Use String comparison
                 const m = allMembers.find(mem => String(mem.id) === String(id));
                 return { name: m ? m.name : '알수없음', count };
             });
@@ -2065,22 +2071,100 @@
         });
         topMembersHtml += '</ul>';
 
+        // 4. Most Consistent Members (Attended most months) - Top 5
+        const memberMonthlyPresence = {};
+        yearlyLogs.forEach(log => {
+            if (!memberMonthlyPresence[log.memberId]) {
+                memberMonthlyPresence[log.memberId] = { name: log.memberName, months: new Set() };
+            }
+            memberMonthlyPresence[log.memberId].months.add(log.date.substring(5, 7)); // "MM"
+        });
+
+        const consistentMembers = Object.values(memberMonthlyPresence)
+            .map(member => ({ name: member.name, count: member.months.size }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5);
+
+        let consistentMembersHtml = '<ul class="space-y-2">';
+        consistentMembers.forEach((m, idx) => {
+            const icon = idx === 0 ? '💎' : '👍';
+            consistentMembersHtml += `<li class="flex justify-between items-center bg-gray-50 p-2 rounded">
+                <span class="font-bold text-gray-700">${icon} ${m.name}</span>
+                <span class="text-green-600 font-bold">${m.count}개월</span>
+            </li>`;
+        });
+        consistentMembersHtml += '</ul>';
+
+        // Render HTML
         container.innerHTML = `
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                 <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
                     <h4 class="text-blue-800 font-bold mb-1">올해 총 출석</h4>
-                    <p class="text-3xl font-bold text-blue-600">${totalAttendance.toLocaleString()}건</p>
+                    <p class="text-3xl font-bold text-blue-600">${totalAttendance.toLocaleString()}회</p>
                 </div>
                 <div class="bg-orange-50 p-4 rounded-xl border border-orange-100">
                     <h4 class="text-orange-800 font-bold mb-1">가장 붐빈 달</h4>
                     <p class="text-3xl font-bold text-orange-600">${busiestMonthStr}</p>
                 </div>
             </div>
-            <div class="border-t pt-4">
-                <h4 class="font-bold text-lg mb-3 text-gray-800">🏆 올해의 개근상 후보 (Top 5)</h4>
-                ${topMembersHtml}
+
+            <div class="border-t pt-4 mb-6">
+                <h4 class="font-bold text-lg mb-3 text-gray-800"><i class="fas fa-chart-line mr-2"></i>월별 출석 현황</h4>
+                <div class="h-64">
+                    <canvas id="yearly-attendance-chart"></canvas>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="border-t pt-4">
+                    <h4 class="font-bold text-lg mb-3 text-gray-800">🏆 올해의 개근상 (Top 10)</h4>
+                    ${topMembersHtml}
+                </div>
+                <div class="border-t pt-4">
+                    <h4 class="font-bold text-lg mb-3 text-gray-800">💎 꾸준함의 상징 (Top 5)</h4>
+                    ${consistentMembersHtml}
+                </div>
             </div>
         `;
+
+        // Render Chart
+        const ctx = document.getElementById('yearly-attendance-chart').getContext('2d');
+        const labels = Object.keys(monthCounts).map(key => `${parseInt(key.split('-')[1])}월`);
+        const data = Object.values(monthCounts);
+
+        if (yearlyTrendChartInstance) yearlyTrendChartInstance.destroy();
+        yearlyTrendChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: { 
+                labels, 
+                datasets: [{ 
+                    label: '월별 출석', 
+                    data, 
+                    backgroundColor: getThemeColor('600', 0.6), 
+                    borderColor: getThemeColor('600', 1), 
+                    borderWidth: 1,
+                    borderRadius: 4
+                }] 
+            },
+            options: {
+                responsive: true, 
+                maintainAspectRatio: false, 
+                plugins: { 
+                    legend: { display: false },
+                    datalabels: {
+                        color: getThemeColor('700'),
+                        anchor: 'end',
+                        align: 'top',
+                        font: { weight: 'bold' },
+                        formatter: (value) => value > 0 ? value : ''
+                    }
+                }, 
+                scales: { 
+                    y: { beginAtZero: true, grace: '15%' },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
     };
 
     const renderReport_TrendChart = (allLogs) => {
