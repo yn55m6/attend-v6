@@ -413,6 +413,10 @@
                         <div id="report-class-popularity" class="overflow-x-auto max-h-[65vh] overflow-y-auto relative"></div>
                     </div>
                 </div>
+                <!-- [NEW] 탭: 주간 개근 현황 -->
+                <div id="report-content-weekly-perfect-attendance" class="report-content-panel hidden space-y-6">
+                    <!-- Content will be rendered by JS -->
+                </div>
                 <!-- 탭 6: 신규 회원 -->
                 <div id="report-content-new-member-trend" class="report-content-panel hidden space-y-6">
                     <div class="card">
@@ -1380,6 +1384,7 @@
             { id: 'member-weekly', name: '개인별 주간' },
             { id: 'member-rank', name: '출석 순위' },
             { id: 'class-popularity', name: '수업 참여' },
+            { id: 'weekly-perfect-attendance', name: '주간 개근' },
             { id: 'new-member-trend', name: '신규 회원' },
             { id: 'inactive-members', name: '장기 미출석' },
             { id: 'congestion', name: '혼잡도 분석' },
@@ -1427,6 +1432,9 @@
                         break;
                     case 'class-popularity':
                         renderReport_ClassPopularity(logsForCurrentMonth);
+                        break;
+                    case 'weekly-perfect-attendance':
+                        renderReport_WeeklyPerfectAttendance(logsForCurrentMonth);
                         break;
                     case 'new-member-trend':
                         renderReport_NewMemberTrend(window.members);
@@ -1677,6 +1685,74 @@
         
         table.appendChild(tbody);
         container.appendChild(table);
+    };
+
+    // [NEW] Weekly Perfect Attendance Report
+    const renderReport_WeeklyPerfectAttendance = (logsForMonth) => {
+        const container = document.getElementById('report-content-weekly-perfect-attendance');
+        if (!container) return;
+
+        // 1. Calculate weekly presence for each member
+        const memberWeeklyPresence = {};
+        logsForMonth.forEach(log => {
+            if (!log.memberId || !log.date) return;
+            const week = getWeekOfMonth(log.date);
+            if (week === 0) return; // Ignore invalid weeks
+
+            if (!memberWeeklyPresence[log.memberId]) {
+                memberWeeklyPresence[log.memberId] = { name: log.memberName, weeks: new Set() };
+            }
+            memberWeeklyPresence[log.memberId].weeks.add(week);
+        });
+
+        // 2. Group members by the number of weeks they attended
+        const attendanceGroups = { 4: [], 3: [], 2: [], 1: [] };
+        Object.values(memberWeeklyPresence).forEach(member => {
+            const weekCount = member.weeks.size;
+            if (attendanceGroups[weekCount]) {
+                attendanceGroups[weekCount].push(member.name);
+            }
+        });
+
+        // Sort names alphabetically within each group
+        for (const key in attendanceGroups) {
+            attendanceGroups[key].sort((a, b) => a.localeCompare(b));
+        }
+
+        // 3. Render the report
+        const selectedMonth = document.getElementById('report-month-filter').value;
+        const [year, month] = selectedMonth.split('-');
+        
+        let html = `<div class="card">
+                        <h3 class="font-bold text-lg mb-4">🏅 주간 개근 현황 (${year}년 ${parseInt(month)}월)</h3>`;
+
+        const groupInfo = [
+            { count: 4, title: '👑 4주 개근 (모든 주 출석)', icon: 'fa-crown text-yellow-500' },
+            { count: 3, title: '🥈 3주 개근 (1주 결석)', icon: 'fa-medal text-gray-400' },
+            { count: 2, title: '🥉 2주 개근 (2주 결석)', icon: 'fa-award text-orange-400' },
+            { count: 1, title: '👏 1주 출석', icon: 'fa-star text-blue-400' }
+        ];
+
+        const hasData = groupInfo.some(group => attendanceGroups[group.count].length > 0);
+        if (!hasData) {
+            html += '<p class="text-center text-gray-500 py-10">해당 월의 출석 데이터가 없습니다.</p>';
+        } else {
+            groupInfo.forEach(group => {
+                const members = attendanceGroups[group.count];
+                if (members.length > 0) {
+                    html += `<div class="mb-6">
+                                <h4 class="font-bold text-gray-800 mb-2 border-b pb-2"><i class="fas ${group.icon} mr-2"></i>${group.title}</h4>
+                                <p class="text-sm text-gray-600">${members.join(', ')}</p>
+                             </div>`;
+                }
+            });
+        }
+
+        html += '</div>';
+        container.innerHTML = html;
+        
+        // Cache for CSV export
+        reportDataCache.weeklyPerfectAttendance = attendanceGroups;
     };
 
     const renderReport_NewMemberTrend = (members) => {
@@ -1984,6 +2060,9 @@
                 case 'class-popularity':
                     renderReport_ClassPopularity(logsForCurrentMonth);
                     break;
+                case 'weekly-perfect-attendance':
+                    renderReport_WeeklyPerfectAttendance(logsForCurrentMonth);
+                    break;
                 case 'congestion':
                     renderReport_Congestion(logsForCurrentMonth);
                     break;
@@ -2054,6 +2133,18 @@
                 headers = ['순위', '수업', '총 출석인원'];
                 rows = (reportDataCache.classPopularity || []).map((item, index) => [index + 1, item[0], item[1]]);
                 fileName = `report-class-popularity-${month}.csv`;
+                break;
+            case 'report-content-weekly-perfect-attendance':
+                headers = ['구분', '회원 목록'];
+                rows = [];
+                const attendanceGroups = reportDataCache.weeklyPerfectAttendance || {};
+                const groupTitles = { 4: '4주 개근', 3: '3주 개근', 2: '2주 개근', 1: '1주 출석' };
+                [4, 3, 2, 1].forEach(count => {
+                    if (attendanceGroups[count] && attendanceGroups[count].length > 0) {
+                        rows.push([groupTitles[count], attendanceGroups[count].join('; ')]);
+                    }
+                });
+                fileName = `report-weekly-attendance-${month}.csv`;
                 break;
             case 'report-content-inactive-members':
                 const period = document.getElementById('inactive-period-selector').value;
