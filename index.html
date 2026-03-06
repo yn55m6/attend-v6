@@ -1569,10 +1569,15 @@
                     ? `<td class="px-2 py-4 text-right font-bold text-blue-600 cursor-pointer underline" onclick="openSessionAttendeesModal('${item.name}', null)">${item.total}</td>` 
                     : `<td class="px-2 py-4 text-right font-bold text-blue-600">${item.total}</td>`;
 
-                const nameParts = item.name.split(' ');
-                const dayPart = nameParts[0].charAt(0);
-                const timePart = nameParts.slice(1).join('');
-                const shortName = dayPart + timePart;
+                let shortName;
+                if (item.name === '미분류') {
+                    shortName = '미분류';
+                } else {
+                    const nameParts = item.name.split(' ');
+                    const dayPart = nameParts[0].charAt(0);
+                    const timePart = nameParts.slice(1).join('');
+                    shortName = dayPart + timePart;
+                }
 
                 // [NEW] Add Instructor Name
                 const session = SESSIONS.find(s => s.name === item.name);
