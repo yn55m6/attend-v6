@@ -3649,7 +3649,15 @@
                     showLoginScreen();
                 }
             } else {
-                showLoginScreen();
+                // [FIX] Check for existing session before showing login screen
+                const isAdmin = sessionStorage.getItem('isAdminLoggedIn') === 'true';
+                const isMemberMode = sessionStorage.getItem('appMode') === 'member';
+
+                if (isAdmin || isMemberMode) {
+                    showApp();
+                } else {
+                    showLoginScreen();
+                }
             }
 
             // DOM이 준비된 후 UI 렌더링
