@@ -1900,7 +1900,7 @@
             const y = current.getFullYear(); const m = String(current.getMonth() + 1).padStart(2, '0');
             const key = `${y}-${m}`;
             labels.unshift(`${current.getMonth() + 1}월`);
-            const count = new Set(allLogs.filter(l => l.date.startsWith(key)).map(l => l.memberId)).size;
+            const count = new Set(allLogs.filter(l => l && l.date && l.date.startsWith(key)).map(l => l.memberId)).size;
             data.unshift(count);
             current.setMonth(current.getMonth() - 1);
         }
