@@ -3708,6 +3708,11 @@
             const logsData = logsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             const instructorsData = instructorsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
+            // [NEW] Get counts for sync details
+            const membersCount = membersSnapshot.size;
+            const logsCount = logsSnapshot.size;
+            const instructorsCount = instructorsSnapshot.size;
+
             // 2. Overwrite local IndexedDB with server data
             await Promise.all([
                 dbHelper.bulkPut('members', membersData),
@@ -3732,7 +3737,8 @@
             updateLastSyncTimeDisplay();
 
             showSyncStatus('synced', '동기화 완료!');
-            showAlert('동기화 완료', '서버로부터 최신 데이터를 가져왔습니다.');
+            const syncDetails = `- 회원: ${membersCount}건\n- 출석 기록: ${logsCount}건\n- 사범 정보: ${instructorsCount}건`;
+            showAlert('동기화 완료', `서버로부터 최신 데이터를 가져왔습니다.\n\n[동기화된 항목]\n${syncDetails}`);
 
             // 5. Refresh current view
             if (currentMode === 'members') renderMembers();
