@@ -3255,11 +3255,10 @@
 
             if (navigator.onLine && firebaseHelper.initFirebase()) {
                 if (member.syncStatus !== 'pending') {
-                    await firebase.firestore().collection('members').doc(String(memberId)).update({ 
-                        name: newName, 
-                        phone: newPhone,
-                        registeredAt: newRegisteredAtISO
-                    });
+                    // [FIX] Use `set` instead of `update` to prevent potential permission issues on existing documents.
+                    // This also ensures the entire object is consistent with the local state.
+                    const { syncStatus, ...memberDataForFirebase } = member;
+                    await firebase.firestore().collection('members').doc(String(memberId)).set(memberDataForFirebase);
                 }
             }
 
