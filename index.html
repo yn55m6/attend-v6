@@ -162,12 +162,12 @@
         <div id="mode-selection" class="w-full max-w-lg text-center">
             <h1 id="mode-selection-title" class="text-3xl sm:text-4xl font-bold text-theme-600 mb-10">몸펴기생활운동<br>연신내 출석부</h1>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <button onclick="enterMemberMode()" class="p-6 sm:p-10 bg-white border-2 border-theme-500 rounded-3xl shadow-lg hover:bg-theme-50 transition-all duration-300 group">
+                <button onclick="enterMemberMode()" class="p-6 sm:p-10 bg-white border-2 border-theme-500 rounded-3xl shadow-lg hover:bg-theme-50 transition-all duration-300 group" title="비밀번호 없이 출석 체크 화면으로 이동합니다.">
                     <i class="fas fa-user-check text-4xl text-theme-500 mb-3" aria-hidden="true"></i>
                     <p class="text-2xl sm:text-3xl font-bold text-gray-800">회원 출석</p>
                     <p class="text-base text-gray-500 mt-2">비밀번호 없이 입장</p>
                 </button>
-                <button onclick="showAdminLogin()" class="p-6 sm:p-10 bg-gray-800 text-white rounded-3xl shadow-lg hover:bg-gray-700 transition-all duration-300">
+                <button onclick="showAdminLogin()" class="p-6 sm:p-10 bg-gray-800 text-white rounded-3xl shadow-lg hover:bg-gray-700 transition-all duration-300" title="관리자 기능(회원관리, 리포트 등)을 사용하려면 비밀번호가 필요합니다.">
                     <i class="fas fa-user-shield text-4xl mb-3" aria-hidden="true"></i>
                     <p class="text-2xl sm:text-3xl font-bold">관리자 전용</p>
                     <p class="text-base text-gray-400 mt-2">비밀번호 입력 후 입장</p>
@@ -176,7 +176,7 @@
         </div>
 
         <div id="login-form" class="w-full max-w-xs text-center hidden">
-            <button onclick="backToModeSelection()" class="mb-8 text-gray-400 hover:text-gray-600" aria-label="이전 화면으로 돌아가기">
+            <button onclick="backToModeSelection()" class="mb-8 text-gray-400 hover:text-gray-600" aria-label="이전 화면으로 돌아가기" title="이전 화면으로 돌아가기">
                 <i class="fas fa-arrow-left mr-2" aria-hidden="true"></i>뒤로가기
             </button>
             <i class="fas fa-lock text-4xl text-gray-400 mb-4" aria-hidden="true"></i>
@@ -194,15 +194,15 @@
                 <input type="checkbox" onchange="window.togglePasswordVisibility(this)" class="mr-2">
                 비밀번호 표시
             </label>
-            <button id="btn-admin-login" onclick="handleLogin()" class="btn-primary">로그인</button>
-            <button id="btn-admin-recovery" onclick="handleMasterKeyReset()" class="btn-primary bg-orange-500 hidden">비밀번호 초기화</button>
-            <button onclick="toggleRecoveryMode()" id="link-forgot-pw" class="block mt-4 text-xs text-theme-500 underline">비밀번호를 잊으셨나요?</button>
+            <button id="btn-admin-login" onclick="handleLogin()" class="btn-primary" title="입력한 비밀번호로 로그인합니다.">로그인</button>
+            <button id="btn-admin-recovery" onclick="handleMasterKeyReset()" class="btn-primary bg-orange-500 hidden" title="마스터 복구 코드를 사용하여 비밀번호를 '1234'로 초기화합니다.">비밀번호 초기화</button>
+            <button onclick="toggleRecoveryMode()" id="link-forgot-pw" class="block mt-4 text-xs text-theme-500 underline" title="비밀번호 분실 시 복구 코드로 초기화할 수 있습니다.">비밀번호를 잊으셨나요?</button>
 
             <div class="mt-8 border-t pt-4 border-dashed border-red-300">
                 <h4 class="text-sm font-bold text-red-500 mb-2">[임시] 테스트 데이터 생성</h4>
                 <p class="text-xs text-gray-500 mb-2">선택한 월에 대해 랜덤 출석 데이터를 생성합니다. (기존 데이터는 유지됩니다)</p>
                 <input type="month" id="test-data-month" class="w-full p-2 border rounded mb-2 bg-gray-50">
-                <button onclick="generateTestData()" class="w-full py-2 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600">데이터 생성 실행</button>
+                <button onclick="generateTestData()" class="w-full py-2 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600" title="개발 및 테스트 목적으로 임의의 출석 데이터를 생성합니다.">데이터 생성 실행</button>
             </div>
         </div>
     </section>
@@ -214,8 +214,8 @@
         <header class="bg-theme-600 text-white p-4 sticky top-0 z-40 shadow-md flex justify-between items-center no-print">
             <h1 class="text-lg sm:text-xl font-bold"><i class="fas fa-check-circle mr-2" aria-hidden="true"></i>연신내 출석부</h1>
             <div class="flex items-center gap-1 sm:gap-2">
-                <button id="btn-exit-member-mode" onclick="exitMemberMode()" class="hidden text-base bg-red-600 px-6 py-2.5 rounded-xl hover:bg-red-700 font-bold shadow-md">출석 종료</button>
-                <button id="btn-exit-admin-mode" onclick="exitMemberMode()" class="admin-only text-base bg-gray-500 px-6 py-2.5 rounded-xl hover:bg-gray-600 font-bold shadow-md">뒤로가기</button>
+                <button id="btn-exit-member-mode" onclick="exitMemberMode()" class="hidden text-base bg-red-600 px-6 py-2.5 rounded-xl hover:bg-red-700 font-bold shadow-md" title="출석 모드를 종료하고 초기 화면으로 돌아갑니다.">출석 종료</button>
+                <button id="btn-exit-admin-mode" onclick="exitMemberMode()" class="admin-only text-base bg-gray-500 px-6 py-2.5 rounded-xl hover:bg-gray-600 font-bold shadow-md" title="관리자 모드를 종료하고 초기 화면으로 돌아갑니다.">뒤로가기</button>
             </div>
         </header>
 
@@ -267,26 +267,26 @@
         <section id="page-home" class="page">
             <div class="card">
                 <h3 class="font-bold text-xl text-gray-700 mb-3"><i class="fas fa-tools mr-2" aria-hidden="true"></i>관리자 도구</h3>
-                <button onclick="manualSyncWithFirebase()" class="w-full py-3 bg-blue-600 text-white rounded-lg text-base font-bold hover:bg-blue-700 border border-blue-700 shadow-sm flex items-center justify-center">
+                <button onclick="manualSyncWithFirebase()" class="w-full py-3 bg-blue-600 text-white rounded-lg text-base font-bold hover:bg-blue-700 border border-blue-700 shadow-sm flex items-center justify-center" title="서버(클라우드)의 최신 데이터를 지금 바로 가져옵니다.">
                     <i class="fas fa-sync-alt mr-2"></i>서버 데이터 수동 동기화
                 </button>
                 <p id="last-sync-time" class="text-xs text-center text-gray-400 mt-1 mb-4">
                     마지막 동기화: 기록 없음
                 </p>
-                <button onclick="openPasswordChangeModal()" class="w-full py-3 bg-gray-100 text-gray-600 rounded-lg text-base font-bold hover:bg-gray-200 border border-gray-200">
+                <button onclick="openPasswordChangeModal()" class="w-full py-3 bg-gray-100 text-gray-600 rounded-lg text-base font-bold hover:bg-gray-200 border border-gray-200" title="관리자 로그인 비밀번호를 변경합니다.">
                     <i class="fas fa-key mr-2"></i>관리자 비밀번호 변경
                 </button>
-                <button onclick="openDataManagementModal()" class="w-full mt-2 py-3 bg-gray-100 text-gray-600 rounded-lg text-base font-bold hover:bg-gray-200 border border-gray-200">
+                <button onclick="openDataManagementModal()" class="w-full mt-2 py-3 bg-gray-100 text-gray-600 rounded-lg text-base font-bold hover:bg-gray-200 border border-gray-200" title="데이터를 파일로 백업하거나, 백업 파일에서 복구합니다.">
                     <i class="fas fa-database mr-2"></i>데이터 관리 (백업/복구)
                 </button>
-                <button onclick="openThemeModal()" class="w-full mt-2 py-3 bg-gray-100 text-gray-600 rounded-lg text-base font-bold hover:bg-gray-200 border border-gray-200">
+                <button onclick="openThemeModal()" class="w-full mt-2 py-3 bg-gray-100 text-gray-600 rounded-lg text-base font-bold hover:bg-gray-200 border border-gray-200" title="앱의 전체적인 색상 테마를 변경합니다.">
                     <i class="fas fa-palette mr-2"></i>테마 설정
                 </button>
-                <button onclick="showAllQRCodesForPrint()" class="w-full mt-2 py-3 bg-gray-100 text-gray-600 rounded-lg text-base font-bold hover:bg-gray-200 border border-gray-200">
+                <button onclick="showAllQRCodesForPrint()" class="w-full mt-2 py-3 bg-gray-100 text-gray-600 rounded-lg text-base font-bold hover:bg-gray-200 border border-gray-200" title="모든 수업(차수)의 출석용 QR 코드를 인쇄용 페이지에서 봅니다.">
                     <i class="fas fa-print mr-2"></i>차수별 QR 코드 출력
                 </button>
                 <div class="border-t my-4"></div>
-                <button onclick="resetData()" class="w-full py-3 bg-red-100 text-red-700 rounded-lg text-base font-bold hover:bg-red-200 border border-red-200 flex items-center justify-center">
+                <button onclick="resetData()" class="w-full py-3 bg-red-100 text-red-700 rounded-lg text-base font-bold hover:bg-red-200 border border-red-200 flex items-center justify-center" title="모든 회원 및 출석 기록을 영구적으로 삭제합니다. (주의!)">
                     <i class="fas fa-trash-alt mr-2"></i>전체 데이터 초기화
                 </button>
             </div>
@@ -307,7 +307,7 @@
                         <input type="text" id="new-member-name" placeholder="이름 (필수)" class="flex-1 p-3 border rounded bg-gray-50 text-lg">
                         <input type="tel" id="new-member-phone" placeholder="뒷번호 (생략가능)" class="w-1/3 p-3 border rounded bg-gray-50 text-lg">
                     </div>
-                    <button onclick="addMember()" class="btn-primary">등록하기</button>
+                    <button onclick="addMember()" class="btn-primary" title="새로운 회원을 명단에 등록합니다.">등록하기</button>
                 </div>
                 <div class="card flex-1 flex flex-col overflow-hidden min-h-0">
                     <div class="flex-none">
@@ -484,7 +484,7 @@
 <!-- Modal: Paper Input (Text Area) -->
 <div id="paper-input-modal" class="fixed inset-0 bg-black bg-opacity-90 z-50 hidden flex flex-col justify-center items-center p-6 no-print">
     <div class="bg-white w-full max-w-md rounded-xl p-6 relative max-h-[90vh] overflow-y-auto">
-        <button onclick="closePaperInputModal()" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times"></i></button>
+        <button onclick="closePaperInputModal()" class="absolute top-4 right-4 text-gray-400" title="닫기"><i class="fas fa-times"></i></button>
         
         <h3 class="text-xl sm:text-2xl font-bold mb-4 text-green-700"><i class="fas fa-edit mr-2"></i>종이 명부 입력</h3>
         
@@ -512,8 +512,8 @@
         </div>
         
         <div class="flex gap-2">
-            <button onclick="processPaperInput()" class="flex-1 btn-primary bg-green-600">일괄 출석 처리</button>
-            <button onclick="closePaperInputModal()" class="w-1/3 py-2 bg-gray-200 text-gray-700 rounded-lg font-bold">닫기</button>
+            <button onclick="processPaperInput()" class="flex-1 btn-primary bg-green-600" title="입력한 명단을 출석 처리합니다.">일괄 출석 처리</button>
+            <button onclick="closePaperInputModal()" class="w-1/3 py-2 bg-gray-200 text-gray-700 rounded-lg font-bold" title="작업을 취소하고 닫습니다.">닫기</button>
         </div>
     </div>
 </div>
@@ -555,15 +555,15 @@
             </div>
         </div>
 
-        <button onclick="confirmAttendance()" class="btn-primary mb-2 text-xl sm:text-2xl py-5 shadow-lg">✅ 출석 확인</button>
-        <button onclick="closeCheckModal()" class="text-gray-500 text-base mt-4 underline p-2">취소</button>
+        <button onclick="confirmAttendance()" class="btn-primary mb-2 text-xl sm:text-2xl py-5 shadow-lg" title="선택한 정보로 출석을 확정합니다.">✅ 출석 확인</button>
+        <button onclick="closeCheckModal()" class="text-gray-500 text-base mt-4 underline p-2" title="출석을 취소하고 닫습니다.">취소</button>
     </div>
 </div>
 
 <!-- Modal: Member History -->
 <div id="history-modal" class="fixed inset-0 bg-black bg-opacity-90 z-50 hidden flex flex-col justify-center items-center p-6 no-print">
     <div class="bg-white w-full max-w-sm rounded-xl p-6 relative max-h-[80vh] flex flex-col">
-        <button onclick="closeHistoryModal()" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times"></i></button>
+        <button onclick="closeHistoryModal()" class="absolute top-4 right-4 text-gray-400" title="닫기"><i class="fas fa-times"></i></button>
         
         <h3 class="text-xl sm:text-2xl font-bold mb-1 text-theme-700" id="history-member-name">회원 이름</h3>
         <p class="text-xs text-gray-500 mb-4">상세 출석 이력 (최신순)</p>
@@ -574,21 +574,21 @@
             </ul>
         </div>
         
-        <button onclick="closeHistoryModal()" class="mt-4 w-full py-3 bg-gray-100 text-gray-600 rounded text-base font-bold">닫기</button>
+        <button onclick="closeHistoryModal()" class="mt-4 w-full py-3 bg-gray-100 text-gray-600 rounded text-base font-bold" title="닫기">닫기</button>
     </div>
 </div>
 
 <!-- Modal: Change Password -->
 <div id="password-change-modal" class="fixed inset-0 bg-black bg-opacity-90 z-50 hidden flex flex-col justify-center items-center p-6 no-print">
     <div class="bg-white w-full max-w-xs rounded-xl p-6 relative">
-        <button onclick="closePasswordChangeModal()" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times"></i></button>
+        <button onclick="closePasswordChangeModal()" class="absolute top-4 right-4 text-gray-400" title="닫기"><i class="fas fa-times"></i></button>
         <h3 class="text-lg sm:text-xl font-bold mb-4 text-gray-800">비밀번호 변경</h3>
         
         <input type="password" id="current-password" placeholder="현재 비밀번호" class="w-full p-3 border rounded mb-2 bg-gray-50">
         <input type="password" id="new-password" placeholder="새 비밀번호" class="w-full p-3 border rounded mb-2 bg-gray-50">
         <input type="password" id="confirm-password" placeholder="새 비밀번호 확인" class="w-full p-3 border rounded mb-4 bg-gray-50">
         
-        <button onclick="changePassword()" class="btn-primary">변경하기</button>
+        <button onclick="changePassword()" class="btn-primary" title="입력한 정보로 비밀번호를 변경합니다.">변경하기</button>
 
         <div class="mt-6 p-3 bg-orange-50 border border-orange-100 rounded-lg text-left">
             <p class="text-[10px] font-bold text-orange-400 uppercase mb-1">마스터 복구 코드 (분실 대비)</p>
@@ -601,7 +601,7 @@
 <!-- Modal: Session Attendees -->
 <div id="session-attendees-modal" class="fixed inset-0 bg-black bg-opacity-90 z-50 hidden flex flex-col justify-center items-center p-6 no-print">
     <div class="bg-white w-full max-w-sm rounded-xl p-6 relative max-h-[80vh] flex flex-col">
-        <button onclick="closeSessionAttendeesModal()" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times"></i></button>
+        <button onclick="closeSessionAttendeesModal()" class="absolute top-4 right-4 text-gray-400" title="닫기"><i class="fas fa-times"></i></button>
         
         <h3 class="text-lg sm:text-xl font-bold mb-1 text-green-700" id="session-attendees-title">세션 참석자 명단</h3>
         <p class="text-xs text-gray-500 mb-4" id="session-attendees-subtitle">월간 총 참석자 (중복 제외)</p>
@@ -612,14 +612,14 @@
             </ul>
         </div>
         
-        <button onclick="closeSessionAttendeesModal()" class="mt-4 w-full py-2 bg-gray-100 text-gray-600 rounded text-sm font-bold">닫기</button>
+        <button onclick="closeSessionAttendeesModal()" class="mt-4 w-full py-2 bg-gray-100 text-gray-600 rounded text-sm font-bold" title="닫기">닫기</button>
     </div>
 </div>
 
 <!-- Modal: New Members List -->
 <div id="new-members-modal" class="fixed inset-0 bg-black bg-opacity-90 z-50 hidden flex flex-col justify-center items-center p-6 no-print">
     <div class="bg-white w-full max-w-sm rounded-xl p-6 relative max-h-[80vh] flex flex-col">
-        <button onclick="closeNewMembersModal()" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times"></i></button>
+        <button onclick="closeNewMembersModal()" class="absolute top-4 right-4 text-gray-400" title="닫기"><i class="fas fa-times"></i></button>
         
         <h3 class="text-lg sm:text-xl font-bold mb-1 text-green-700" id="new-members-title">신규 회원 명단</h3>
         <p class="text-xs text-gray-500 mb-4" id="new-members-subtitle">해당 월에 가입한 회원</p>
@@ -630,7 +630,7 @@
             </ul>
         </div>
         
-        <button onclick="closeNewMembersModal()" class="mt-4 w-full py-2 bg-gray-100 text-gray-600 rounded text-sm font-bold">닫기</button>
+        <button onclick="closeNewMembersModal()" class="mt-4 w-full py-2 bg-gray-100 text-gray-600 rounded text-sm font-bold" title="닫기">닫기</button>
     </div>
 </div>
 
@@ -641,8 +641,8 @@
         <p class="text-sm text-gray-500 mb-4">민감한 작업을 위해<br>관리자 비밀번호를 입력하세요.</p>
         <input type="password" id="confirm-pw-input" class="w-full p-3 text-center text-base sm:text-lg border-2 rounded-lg mb-4" placeholder="••••" onkeyup="if(event.key==='Enter') handlePasswordConfirm()">
         <div class="flex gap-2">
-            <button onclick="handlePasswordConfirm()" class="flex-1 btn-primary">확인</button>
-            <button onclick="closePasswordConfirmModal()" class="w-1/3 py-2 bg-gray-200 text-gray-700 rounded-lg font-bold">취소</button>
+            <button onclick="handlePasswordConfirm()" class="flex-1 btn-primary" title="비밀번호를 확인하고 다음 단계로 진행합니다.">확인</button>
+            <button onclick="closePasswordConfirmModal()" class="w-1/3 py-2 bg-gray-200 text-gray-700 rounded-lg font-bold" title="작업을 취소하고 닫습니다.">취소</button>
         </div>
     </div>
 </div>
@@ -665,10 +665,10 @@
         </div>
 
         <div class="flex flex-col gap-2">
-            <button onclick="handleResetFinalConfirm()" class="w-full py-4 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 shadow-lg transition-all active:scale-95">
+            <button onclick="handleResetFinalConfirm()" class="w-full py-4 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 shadow-lg transition-all active:scale-95" title="모든 데이터를 영구적으로 삭제합니다. (주의!)">
                 전체 삭제 실행
             </button>
-            <button onclick="closeResetConfirmModal()" class="w-full py-3 bg-gray-100 text-gray-500 rounded-xl font-bold hover:bg-gray-200 transition-all">
+            <button onclick="closeResetConfirmModal()" class="w-full py-3 bg-gray-100 text-gray-500 rounded-xl font-bold hover:bg-gray-200 transition-all" title="초기화를 취소하고 이전 화면으로 돌아갑니다.">
                 취소
             </button>
         </div>
@@ -678,7 +678,7 @@
 <!-- [NEW] Undo Toast Notification -->
 <div id="undo-toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-4 sm:px-6 py-3 sm:py-4 rounded-2xl shadow-lg flex flex-col items-center gap-2 z-[100] hidden transition-all duration-300">
     <span id="undo-toast-message" class="text-base sm:text-lg font-semibold"></span>
-    <button id="undo-toast-button" class="font-bold text-yellow-400 hover:text-yellow-300 underline text-base mt-1">출석 취소</button>
+    <button id="undo-toast-button" class="font-bold text-yellow-400 hover:text-yellow-300 underline text-base mt-1" title="방금 완료한 출석을 취소합니다.">출석 취소</button>
 </div>
 
 <!-- [NEW] Update Available Toast -->
@@ -688,13 +688,13 @@
         <p class="font-bold">새로운 버전이 있어요!</p>
         <p class="text-sm">앱을 새로고침하여 업데이트하세요.</p>
     </div>
-    <button id="update-now-button" class="ml-4 px-4 py-2 bg-white text-blue-600 font-bold rounded-lg hover:bg-blue-100">새로고침</button>
+    <button id="update-now-button" class="ml-4 px-4 py-2 bg-white text-blue-600 font-bold rounded-lg hover:bg-blue-100" title="앱을 새로고침하여 업데이트를 적용합니다.">새로고침</button>
 </div>
 
 <!-- [NEW] Modal: Theme Settings -->
 <div id="theme-modal" class="fixed inset-0 bg-black bg-opacity-90 z-50 hidden flex flex-col justify-center items-center p-6 no-print">
     <div class="bg-white w-full max-w-xs rounded-xl p-6 relative">
-        <button onclick="closeThemeModal()" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times"></i></button>
+        <button onclick="closeThemeModal()" class="absolute top-4 right-4 text-gray-400" title="닫기"><i class="fas fa-times"></i></button>
         <h3 class="text-lg sm:text-xl font-bold mb-4 text-gray-800"><i class="fas fa-palette mr-2"></i>테마 색상 변경</h3>
         <div id="theme-swatches" class="grid grid-cols-4 gap-4">
             <!-- Swatches will be rendered here by JS -->
@@ -708,14 +708,14 @@
 <!-- [NEW] Modal: Data Management (Backup/Restore) -->
 <div id="data-management-modal" class="fixed inset-0 bg-black bg-opacity-90 z-50 hidden flex flex-col justify-center items-center p-6 no-print">
     <div class="bg-white w-full max-w-md rounded-xl p-6 relative">
-        <button onclick="closeDataManagementModal()" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times"></i></button>
+        <button onclick="closeDataManagementModal()" class="absolute top-4 right-4 text-gray-400" title="닫기"><i class="fas fa-times"></i></button>
         <h3 class="text-lg sm:text-xl font-bold mb-4 text-gray-800"><i class="fas fa-database mr-2"></i>데이터 관리</h3>
         
         <div class="space-y-4">
             <div class="p-4 bg-blue-50 rounded-lg border border-blue-100">
                 <h4 class="font-bold text-blue-700">데이터 백업 (내보내기)</h4>
                 <p class="text-sm text-gray-600 my-2">모든 데이터를 암호화된 JSON 파일로 다운로드합니다. 이 파일과 비밀번호가 있으면 언제든 복구할 수 있습니다.</p>
-                <button onclick="exportData()" class="w-full py-3 bg-blue-600 text-white rounded-lg text-base font-bold hover:bg-blue-700 flex items-center justify-center">
+                <button onclick="exportData()" class="w-full py-3 bg-blue-600 text-white rounded-lg text-base font-bold hover:bg-blue-700 flex items-center justify-center" title="모든 데이터를 암호화된 파일로 내보냅니다.">
                     <i class="fas fa-download mr-2"></i>백업 파일 생성
                 </button>
             </div>
@@ -723,7 +723,7 @@
             <div class="p-4 bg-orange-50 rounded-lg border border-orange-100">
                 <h4 class="font-bold text-orange-700">데이터 복구 (가져오기)</h4>
                 <p class="text-sm text-gray-600 my-2">백업 파일을 사용하여 데이터를 복원합니다. <span class="font-bold text-red-500">현재 데이터는 모두 덮어씌워집니다.</span></p>
-                <label for="import-file-input" class="w-full py-3 bg-orange-500 text-white rounded-lg text-base font-bold hover:bg-orange-600 cursor-pointer text-center flex items-center justify-center">
+                <label for="import-file-input" class="w-full py-3 bg-orange-500 text-white rounded-lg text-base font-bold hover:bg-orange-600 cursor-pointer text-center flex items-center justify-center" title="백업 파일(.json)을 선택하여 데이터를 복원합니다.">
                     <i class="fas fa-upload mr-2"></i>백업 파일에서 복구
                 </label>
                 <input type="file" id="import-file-input" class="hidden" accept=".json" onchange="importData(event)">
@@ -732,7 +732,7 @@
             <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
                 <h4 class="font-bold text-gray-700">데이터 보정</h4>
                 <p class="text-sm text-gray-600 my-2">가입일 정보가 없는 회원을 찾아, 최초 출석일을 가입일로 설정합니다.</p>
-                <button onclick="repairMemberData()" class="w-full py-3 bg-gray-600 text-white rounded-lg text-base font-bold hover:bg-gray-700 flex items-center justify-center">
+                <button onclick="repairMemberData()" class="w-full py-3 bg-gray-600 text-white rounded-lg text-base font-bold hover:bg-gray-700 flex items-center justify-center" title="가입일이 없는 회원의 데이터를 최초 출석일 기준으로 보정합니다.">
                     <i class="fas fa-wrench mr-2"></i>가입일 데이터 복구
                 </button>
             </div>
@@ -743,7 +743,7 @@
 <!-- [NEW] Modal: Instructor Edit -->
 <div id="instructor-edit-modal" class="fixed inset-0 bg-black bg-opacity-90 z-50 hidden flex flex-col justify-center items-center p-6 no-print">
     <div class="bg-white w-full max-w-xs rounded-xl p-6 relative">
-        <button onclick="closeInstructorEditModal()" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times"></i></button>
+        <button onclick="closeInstructorEditModal()" class="absolute top-4 right-4 text-gray-400" title="닫기"><i class="fas fa-times"></i></button>
         <h3 class="text-lg sm:text-xl font-bold mb-4 text-gray-800" id="instructor-edit-title">담당 사범 수정</h3>
         
         <div class="mb-4">
@@ -752,7 +752,7 @@
             <input type="hidden" id="instructor-edit-code">
         </div>
         
-        <button onclick="saveInstructorEdit()" class="btn-primary">저장하기</button>
+        <button onclick="saveInstructorEdit()" class="btn-primary" title="수정한 사범 이름을 저장합니다.">저장하기</button>
     </div>
 </div>
 
@@ -764,7 +764,7 @@
         </div>
         <h3 class="text-xl font-bold text-gray-800 mb-2" id="custom-alert-title">알림</h3>
         <p class="text-gray-600 mb-6 whitespace-pre-line leading-relaxed" id="custom-alert-message">내용</p>
-        <button onclick="closeCustomAlert()" class="w-full py-3.5 bg-blue-600 text-white rounded-xl font-bold text-lg hover:bg-blue-700 transition-colors shadow-lg">
+        <button onclick="closeCustomAlert()" class="w-full py-3.5 bg-blue-600 text-white rounded-xl font-bold text-lg hover:bg-blue-700 transition-colors shadow-lg" title="알림을 확인하고 닫습니다.">
             확인
         </button>
     </div>
@@ -784,10 +784,10 @@
         <h3 class="text-xl font-bold text-gray-800 mb-2" id="custom-confirm-title">확인</h3>
         <p class="text-gray-600 mb-6 whitespace-pre-line leading-relaxed" id="custom-confirm-message">내용</p>
         <div class="flex gap-3">
-            <button onclick="closeCustomConfirm(false)" class="flex-1 py-3.5 bg-gray-100 text-gray-600 rounded-xl font-bold text-lg hover:bg-gray-200 transition-colors">
+            <button onclick="closeCustomConfirm(false)" class="flex-1 py-3.5 bg-gray-100 text-gray-600 rounded-xl font-bold text-lg hover:bg-gray-200 transition-colors" title="작업을 취소합니다.">
                 취소
             </button>
-            <button onclick="closeCustomConfirm(true)" class="flex-1 py-3.5 bg-indigo-600 text-white rounded-xl font-bold text-lg hover:bg-indigo-700 transition-colors shadow-lg">
+            <button onclick="closeCustomConfirm(true)" class="flex-1 py-3.5 bg-indigo-600 text-white rounded-xl font-bold text-lg hover:bg-indigo-700 transition-colors shadow-lg" title="작업을 승인하고 계속합니다.">
                 확인
             </button>
         </div>
@@ -804,10 +804,10 @@
         <p class="text-gray-600 mb-6 whitespace-pre-line leading-relaxed" id="custom-prompt-message">내용</p>
         <input type="text" id="custom-prompt-input" class="w-full p-4 text-center text-lg border-2 border-gray-200 rounded-xl mb-6 focus:border-indigo-500 outline-none" onkeyup="if(event.key==='Enter') submitCustomPrompt()">
         <div class="flex gap-3">
-            <button onclick="closeCustomPrompt(null)" class="flex-1 py-3.5 bg-gray-100 text-gray-600 rounded-xl font-bold text-lg hover:bg-gray-200 transition-colors">
+            <button onclick="closeCustomPrompt(null)" class="flex-1 py-3.5 bg-gray-100 text-gray-600 rounded-xl font-bold text-lg hover:bg-gray-200 transition-colors" title="입력을 취소합니다.">
                 취소
             </button>
-            <button onclick="submitCustomPrompt()" class="flex-1 py-3.5 bg-indigo-600 text-white rounded-xl font-bold text-lg hover:bg-indigo-700 transition-colors shadow-lg">
+            <button onclick="submitCustomPrompt()" class="flex-1 py-3.5 bg-indigo-600 text-white rounded-xl font-bold text-lg hover:bg-indigo-700 transition-colors shadow-lg" title="입력한 내용을 제출합니다.">
                 확인
             </button>
         </div>
@@ -820,8 +820,8 @@
         <div class="flex justify-between items-center mb-6 no-print">
             <h2 class="text-2xl font-bold">차수별 QR 코드</h2>
             <div>
-                <button onclick="window.print()" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold mr-2"><i class="fas fa-print mr-2"></i>인쇄하기</button>
-                <button onclick="closeQrPrintModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-bold">닫기</button>
+                <button onclick="window.print()" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold mr-2" title="인쇄 미리보기 창을 엽니다."><i class="fas fa-print mr-2"></i>인쇄하기</button>
+                <button onclick="closeQrPrintModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-bold" title="닫기">닫기</button>
             </div>
         </div>
         <div id="print-area" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-8">
@@ -2062,8 +2062,8 @@
                         <p class="text-sm ${nameClass}">${instructorName}</p>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="editInstructor('${session.code}', '${window.instructors[session.code] || ''}')" class="text-blue-500 text-sm border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-50">수정</button>
-                        ${instructorName !== '미지정' ? `<button onclick="deleteInstructor('${session.code}')" class="text-red-400 text-sm border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50">삭제</button>` : ''}
+                        <button onclick="editInstructor('${session.code}', '${window.instructors[session.code] || ''}')" class="text-blue-500 text-sm border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-50" title="담당 사범 이름을 수정합니다.">수정</button>
+                        ${instructorName !== '미지정' ? `<button onclick="deleteInstructor('${session.code}')" class="text-red-400 text-sm border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50" title="이 수업의 담당 사범 지정을 해제합니다.">삭제</button>` : ''}
                     </div>
                 </li>
             `;
@@ -2596,12 +2596,12 @@
             list.innerHTML += `<li class="py-4 flex justify-between items-center">
                 <div onclick="openHistoryModal('${m.id}')" class="cursor-pointer flex-1 hover:bg-theme-50 p-2 rounded transition">
                     <div class="flex items-center gap-2">
-                        <p class="font-bold text-lg text-gray-800 flex items-center">${m.name} <i class="fas fa-chevron-right text-gray-300 text-xs ml-2"></i></p>
+                        <p class="font-bold text-lg text-gray-800 flex items-center" title="이 회원의 상세 출석 이력을 봅니다.">${m.name} <i class="fas fa-chevron-right text-gray-300 text-xs ml-2"></i></p>
                         ${regDate ? `<span class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">${regDate} 가입</span>` : ''}
                     </div>
                     <p class="text-sm text-gray-400">${m.phone}</p>
                 </div>
-                <button onclick="deleteMember('${m.id}')" class="text-red-400 text-sm border border-red-200 px-3 py-2 rounded-lg hover:bg-red-50 ml-2">삭제</button>
+                <button onclick="deleteMember('${m.id}')" class="text-red-400 text-sm border border-red-200 px-3 py-2 rounded-lg hover:bg-red-50 ml-2" title="이 회원을 목록에서 영구적으로 삭제합니다.">삭제</button>
             </li>`;
         });
     }
