@@ -511,6 +511,14 @@
                         <div id="yearly-summary-content" class="space-y-6"></div>
                     </div>
                 </div>
+                <!-- [NEW] 탭: 신규/기존 비교 -->
+                <div id="report-content-new-vs-existing" class="report-content-panel hidden space-y-6">
+                    <!-- Content will be rendered by JS -->
+                </div>
+                <!-- [NEW] 탭: 회원 유지율 -->
+                <div id="report-content-retention" class="report-content-panel hidden space-y-6">
+                    <!-- Content will be rendered by JS -->
+                </div>
             </div>
         
         </section>
@@ -1097,6 +1105,7 @@
     let trendChartInstance = null; // Chart instance
     let yearlyTrendChartInstance = null; // [NEW]
     let congestionChartInstance = null; // [NEW] Congestion Chart instance
+    let newVsExistingChartInstance = null; // [NEW]
     let undoTimer = null; // [NEW] Timer for the undo toast
 
     // --- [NEW] Custom Modal Helpers ---
@@ -1468,6 +1477,8 @@
             { id: 'inactive-members', name: '장기 미출석' },
             { id: 'congestion', name: '혼잡도 분석' },
             { id: 'yearly-summary', name: '연말 결산' },
+            { id: 'new-vs-existing', name: '신규/기존 비교' },
+            { id: 'retention', name: '회원 유지율' },
         ];
 
         reportTabsContainer.innerHTML = '';
@@ -1527,6 +1538,12 @@
                     case 'yearly-summary':
                         renderReport_YearlySummary(window.logs, window.members);
                         break;
+                case 'new-vs-existing':
+                    renderReport_NewVsExisting(getLogsForCurrentMonth(), window.members);
+                    break;
+                case 'retention':
+                    renderReport_Retention(window.logs, window.members);
+                    break;
                 }
             };
             reportTabsContainer.appendChild(tabButton);
@@ -2178,6 +2195,137 @@
         });
     };
 
+    // [NEW] New vs Existing Member Attendance Report
+    const renderReport_NewVsExisting = (logsForMonth, allMembers) => {
+        const container = document.getElementById('report-content-new-vs-existing');
+        if (!container) return;
+
+        const selectedMonthStr = document.getElementById('report-month-filter').value;
+        const [year, month] = selectedMonthStr.split('-').map(Number);
+        const reportEndDate = new Date(year, month, 0); // Last day of the month
+
+        let newMemberAttendance = 0;
+        let existingMemberAttendance = 0;
+
+        logsForMonth.forEach(log => {
+            const member = allMembers.find(m => String(m.id) === String(log.memberId));
+            if (!member || !member.registeredAt) {
+                existingMemberAttendance++;
+                return;
+            }
+
+            const regDate = new Date(member.registeredAt);
+            const threeMonthsAgo = new Date(reportEndDate);
+            threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+            if (regDate >= threeMonthsAgo) {
+                newMemberAttendance++;
+            } else {
+                existingMemberAttendance++;
+            }
+        });
+
+        const totalAttendance = newMemberAttendance + existingMemberAttendance;
+        const newMemberPercent = totalAttendance > 0 ? ((newMemberAttendance / totalAttendance) * 100).toFixed(1) : 0;
+        const existingMemberPercent = totalAttendance > 0 ? ((existingMemberAttendance / totalAttendance) * 100).toFixed(1) : 0;
+
+        container.innerHTML = `
+            <div class="card">
+                <h3 class="font-bold text-lg mb-4">📊 신규 vs 기존 회원 출석 비교 (${month}월)</h3>
+                <p class="text-sm text-gray-500 mb-6">가입 3개월 이내 회원을 '신규 회원'으로 분류하여 해당 월의 총 출석 횟수를 비교합니다.</p>
+                ${totalAttendance > 0 ? `
+                    <div class="h-64 mb-6">
+                        <canvas id="new-vs-existing-chart"></canvas>
+                    </div>
+                    <div class="text-center space-y-2">
+                        <p class="text-lg"><span class="font-bold text-blue-600">기존 회원:</span> ${existingMemberPercent}% (${existingMemberAttendance}회)</p>
+                        <p class="text-lg"><span class="font-bold text-green-600">신규 회원:</span> ${newMemberPercent}% (${newMemberAttendance}회)</p>
+                    </div>
+                ` : `
+                    <p class="text-center text-gray-500 py-10">해당 월의 출석 데이터가 없습니다.</p>
+                `}
+            </div>
+        `;
+
+        if (totalAttendance > 0) {
+            const ctx = document.getElementById('new-vs-existing-chart').getContext('2d');
+            if (newVsExistingChartInstance) newVsExistingChartInstance.destroy();
+            newVsExistingChartInstance = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['기존 회원', '신규 회원'],
+                    datasets: [{
+                        data: [existingMemberAttendance, newMemberAttendance],
+                        backgroundColor: ['rgba(59, 130, 246, 0.7)', 'rgba(34, 197, 94, 0.7)'],
+                        borderColor: ['rgba(59, 130, 246, 1)', 'rgba(34, 197, 94, 1)'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
+                        datalabels: {
+                            color: '#fff', font: { weight: 'bold', size: 16 },
+                            formatter: (value, ctx) => {
+                                const sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                const percentage = (value * 100 / sum).toFixed(1) + "%";
+                                return value > 0 ? percentage : '';
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    };
+
+    // [NEW] Member Retention Report
+    const renderReport_Retention = (allLogs, allMembers) => {
+        const container = document.getElementById('report-content-retention');
+        if (!container) return;
+
+        if (!document.getElementById('retention-cohort-month')) {
+            const today = new Date();
+            const defaultCohortDate = new Date(today.getFullYear(), today.getMonth() - 3, 1);
+            const defaultValue = `${defaultCohortDate.getFullYear()}-${String(defaultCohortDate.getMonth() + 1).padStart(2, '0')}`;
+            container.innerHTML = `
+                <div class="card">
+                    <h3 class="font-bold text-lg mb-4">📈 회원 유지율(Retention) 분석</h3>
+                    <div class="flex flex-col sm:flex-row sm:items-center gap-2 mb-6">
+                        <label for="retention-cohort-month" class="font-semibold text-gray-600 flex-shrink-0">가입 월 기준:</label>
+                        <input type="month" id="retention-cohort-month" class="w-full sm:w-auto p-2 border rounded bg-gray-50 font-bold text-gray-700" value="${defaultValue}" onchange="renderReport_Retention(window.logs, window.members)">
+                    </div>
+                    <div id="retention-results"></div>
+                </div>`;
+        }
+
+        const resultsContainer = document.getElementById('retention-results');
+        const cohortMonthStr = document.getElementById('retention-cohort-month').value;
+        const [cohortYear, cohortMonth] = cohortMonthStr.split('-').map(Number);
+
+        const cohortMembers = allMembers.filter(m => m.registeredAt && new Date(m.registeredAt).getFullYear() === cohortYear && new Date(m.registeredAt).getMonth() + 1 === cohortMonth);
+        if (cohortMembers.length === 0) {
+            resultsContainer.innerHTML = `<p class="text-center text-gray-500 py-10">${cohortMonth}월에 가입한 회원이 없습니다.</p>`;
+            return;
+        }
+
+        const cohortMemberIds = new Set(cohortMembers.map(m => m.id));
+        let html = `<div class="p-4 bg-gray-50 rounded-lg border border-gray-200 mb-4"><p class="font-bold text-theme-600">${cohortMonth}월 가입자 (${cohortMembers.length}명)</p></div><ul class="space-y-3">`;
+        let hasData = false;
+        for (let i = 1; i <= 6; i++) {
+            const targetDate = new Date(cohortYear, cohortMonth - 1 + i, 1);
+            const targetMonthStr = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}`;
+            const activeLogsInMonth = allLogs.filter(log => log.date && log.date.startsWith(targetMonthStr) && cohortMemberIds.has(log.memberId));
+            const activeCount = new Set(activeLogsInMonth.map(l => l.memberId)).size;
+            const retentionRate = ((activeCount / cohortMembers.length) * 100).toFixed(0);
+            if (activeCount > 0) hasData = true;
+            html += `<li class="flex items-center justify-between p-3 bg-white rounded-lg border"><span class="font-semibold text-gray-700">${targetDate.getMonth() + 1}월 활동:</span><div class="text-right"><span class="font-bold text-lg text-indigo-600">${activeCount}명</span><span class="text-sm text-gray-500 ml-2">(${retentionRate}%)</span></div></li>`;
+        }
+        html += '</ul>';
+        if (!hasData) html += `<p class="text-center text-gray-400 pt-6">이후 활동 기록이 없습니다.</p>`;
+        resultsContainer.innerHTML = html;
+    };
+
     const renderReport_TrendChart = (allLogs) => {
         const ctx = document.getElementById('attendance-trend-chart').getContext('2d');
         const labels = []; const data = [];
@@ -2262,6 +2410,12 @@
                     break;
                 case 'congestion':
                     renderReport_Congestion(logsForCurrentMonth);
+                    break;
+                case 'new-vs-existing':
+                    renderReport_NewVsExisting(logsForCurrentMonth, window.members);
+                    break;
+                case 'retention':
+                    renderReport_Retention(window.logs, window.members);
                     break;
             }
         };
