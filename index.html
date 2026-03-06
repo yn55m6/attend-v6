@@ -308,7 +308,7 @@
         <section id="page-members" class="page">
             <div class="h-[calc(100vh-140px)] flex flex-col">
                 <div class="card flex-none">
-                    <h2 class="font-bold text-xl mb-4">회원 등록</h2>
+                    <h2 class="font-bold text-xl mb-4"><i class="fas fa-user-plus mr-2"></i>회원 등록</h2>
                     <div class="flex gap-3 mb-3">
                         <input type="text" id="new-member-name" placeholder="이름 (필수)" class="flex-1 p-3 border rounded bg-gray-50 text-lg">
                         <input type="tel" id="new-member-phone" placeholder="뒷번호 (생략가능)" class="w-1/3 p-3 border rounded bg-gray-50 text-lg">
@@ -333,7 +333,7 @@
         <!-- [NEW] Page: Bulk Attendance -->
         <section id="page-bulk-attendance" class="page">
             <div class="card">
-                <h3 class="text-xl sm:text-2xl font-bold mb-4 text-green-700"><i class="fas fa-paste mr-2"></i>일괄 출석 입력</h3>
+                <h3 class="text-xl sm:text-2xl font-bold mb-4 text-green-700"><i class="fas fa-clipboard-list mr-2"></i>일괄 출석 입력</h3>
                 <p class="text-sm text-gray-500 mb-6">종이 명부나 스캔한 텍스트를 붙여넣어 한번에 출석 처리할 수 있습니다.</p>
                 
                 <div class="mb-3">
@@ -380,7 +380,7 @@
         <section id="page-reports" class="page">
             <!-- Month Filter -->
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
-                <h2 class="text-xl sm:text-2xl font-bold text-gray-800">리포트 및 통계</h2>
+                <h2 class="text-xl sm:text-2xl font-bold text-gray-800"><i class="fas fa-chart-pie mr-2"></i>리포트 및 통계</h2>
                 <div class="flex items-center gap-2">
                     <input type="month" id="report-month-filter" class="w-full sm:w-auto p-3 border rounded bg-gray-50 font-bold text-gray-700 text-lg sm:text-base">
                     <button onclick="exportReportToCSV()" class="p-3 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700" title="현재 탭 데이터 CSV로 내보내기"><i class="fas fa-file-csv text-xl"></i></button>
@@ -512,7 +512,7 @@
                 <i class="fas fa-users" aria-hidden="true"></i><span>회원관리</span>
             </div>
             <div class="nav-item" onclick="switchPage(this, 'bulk-attendance')">
-                <i class="fas fa-paste" aria-hidden="true"></i><span>일괄입력</span>
+                <i class="fas fa-clipboard-list" aria-hidden="true"></i><span>일괄출석</span>
             </div>
             <div class="nav-item admin-only" onclick="switchPage(this, 'instructors')">
                 <i class="fas fa-chalkboard-teacher" aria-hidden="true"></i><span>수업사범</span>
