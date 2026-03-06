@@ -1411,13 +1411,22 @@
                 // 4. 데이터 렌더링 실행
                 const logsForCurrentMonth = getLogsForCurrentMonth();
 
-                if (['dashboard', 'class-weekly', 'member-weekly', 'member-rank', 'class-popularity'].includes(tab.id)) {
-                    renderMonthDependentReports(logsForCurrentMonth);
-                }
-
                 switch (tab.id) {
                     case 'dashboard':
+                        renderReport_MonthlyTotal(logsForCurrentMonth);
                         renderReport_TrendChart(window.logs);
+                        break;
+                    case 'class-weekly':
+                        renderReport_ClassWeekly(logsForCurrentMonth);
+                        break;
+                    case 'member-weekly':
+                        renderReport_MemberWeekly(logsForCurrentMonth);
+                        break;
+                    case 'member-rank':
+                        renderReport_MemberRank(logsForCurrentMonth);
+                        break;
+                    case 'class-popularity':
+                        renderReport_ClassPopularity(logsForCurrentMonth);
                         break;
                     case 'new-member-trend':
                         renderReport_NewMemberTrend(window.members);
@@ -1954,9 +1963,27 @@
         monthFilter.onchange = () => {
             const logsForCurrentMonth = getLogsForCurrentMonth();
 
-            // Re-render month-dependent reports if the active tab is one of them
-            if (['dashboard', 'class-weekly', 'member-weekly', 'member-rank', 'class-popularity', 'congestion'].includes(currentActiveReportTabId)) {
-                renderMonthDependentReports(logsForCurrentMonth);
+            // Re-render the currently active, month-dependent report
+            switch (currentActiveReportTabId) {
+                case 'dashboard':
+                    renderReport_MonthlyTotal(logsForCurrentMonth);
+                    // Trend chart is not month-dependent, so no need to re-render
+                    break;
+                case 'class-weekly':
+                    renderReport_ClassWeekly(logsForCurrentMonth);
+                    break;
+                case 'member-weekly':
+                    renderReport_MemberWeekly(logsForCurrentMonth);
+                    break;
+                case 'member-rank':
+                    renderReport_MemberRank(logsForCurrentMonth);
+                    break;
+                case 'class-popularity':
+                    renderReport_ClassPopularity(logsForCurrentMonth);
+                    break;
+                case 'congestion':
+                    renderReport_Congestion(logsForCurrentMonth);
+                    break;
             }
         };
         
