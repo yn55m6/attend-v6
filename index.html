@@ -4433,6 +4433,39 @@
             showAlert("동기화 실패", "데이터를 서버와 동기화하는 데 실패했습니다. 인터넷 연결을 확인하고 다시 시도해주세요.");
             showSyncStatus('offline');
         }
+
+        // [NEW] Sync instructors
+        const allInstructors = await dbHelper.getAll('instructors');
+        const pendingInstructors = allInstructors.filter(inst => inst.syncStatus === 'pending');
+
+        if (pendingInstructors.length > 0) {
+            showSyncStatus('syncing', `사범 정보 ${pendingInstructors.length}건 동기화...`);
+            try {
+                const batch = firebase.firestore().batch();
+                pendingInstructors.forEach(inst => {
+                    const docRef = firebase.firestore().collection('instructors').doc(inst.sessionCode);
+                    batch.set(docRef, { name: inst.name });
+                });
+                await batch.commit();
+
+                // Update local IndexedDB after successful sync
+                const updatedInstructors = pendingInstructors.map(inst => {
+                    delete inst.syncStatus;
+                    return inst;
+                });
+                await dbHelper.bulkPut('instructors', updatedInstructors);
+
+                // In-memory state is already updated, just log
+                console.log(`${pendingInstructors.length} instructor records synced.`);
+                
+                showSyncStatus('synced', `사범 정보 ${pendingInstructors.length}건 동기화 완료!`);
+
+            } catch (error) {
+                console.error("Instructor sync failed:", error);
+                showAlert("동기화 실패", "사범 정보를 서버와 동기화하는 데 실패했습니다.");
+                showSyncStatus('offline');
+            }
+        }
     }
 
     // [NEW] Function to display last sync time
@@ -4461,7 +4494,10 @@
 
         showSyncStatus('syncing', '수동 동기화 중...');
         try {
-            // 1. Fetch all data from Firebase
+            // [FIX] 1. Sync any pending local data to server FIRST
+            await syncPendingData();
+
+            // 2. Fetch all data from Firebase
             const [membersSnapshot, logsSnapshot, instructorsSnapshot] = await Promise.all([
                 firebaseHelper.getCollection('members').get(),
                 firebaseHelper.getCollection('logs').get(),
@@ -4477,25 +4513,22 @@
             const logsCount = logsSnapshot.size;
             const instructorsCount = instructorsSnapshot.size;
 
-            // 2. Overwrite local IndexedDB with server data
+            // 3. Overwrite local IndexedDB with server data
             await Promise.all([
                 dbHelper.bulkPut('members', membersData),
                 dbHelper.bulkPut('logs', logsData),
                 dbHelper.bulkPut('instructors', instructorsData.map(d => ({sessionCode: d.id, name: d.name})))
             ]);
 
-            // 3. Reload data into memory
+            // 4. Reload data into memory
             window.members = membersData.sort((a, b) => a.name.localeCompare(b.name));
             window.logs = logsData.sort((a, b) => b.id - a.id);
             window.instructors = instructorsData.reduce((acc, curr) => {
-                acc[curr.sessionCode] = curr.name;
+                acc[curr.id] = curr.name;
                 return acc;
             }, {});
 
-            // 4. Sync any pending local data to server
-            await syncPendingData();
-
-            // [NEW] Store and display last sync time
+            // 5. Store and display last sync time
             const now = new Date().toISOString();
             localStorage.setItem('lastSyncTime', now);
             updateLastSyncTimeDisplay();
@@ -4504,7 +4537,7 @@
             const syncDetails = `- 회원: ${membersCount}건\n- 출석 기록: ${logsCount}건\n- 사범 정보: ${instructorsCount}건`;
             showAlert('동기화 완료', `서버로부터 최신 데이터를 가져왔습니다.\n\n[동기화된 항목]\n${syncDetails}`);
 
-            // 5. Refresh current view
+            // 6. Refresh current view
             if (currentMode === 'members') renderMembers();
             if (currentMode === 'reports') showReports(currentActiveReportTabId);
             if (currentMode === 'instructors') renderInstructorManagement();
