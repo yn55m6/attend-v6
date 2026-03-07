@@ -151,7 +151,7 @@
     window.onerror = function(msg, url, line, col, error) {
         // [IMPROVE] 스크립트 오류 발생 시 사용자에게 친절한 메시지 표시
         const friendlyMessage = `죄송합니다. 예상치 못한 시스템 오류가 발생했습니다. 😥\n\n앱이 정상적으로 동작하지 않을 수 있으니, 페이지를 새로고침 해주세요.\n\n(오류 정보: ${msg} at line ${line})`;
-        alert(friendlyMessage);
+        showAlert('시스템 오류', friendlyMessage);
         return false;
     };
 </script>
@@ -2581,13 +2581,14 @@
     }
 
     window.deleteInstructor = async function(sessionCode) {
-        if (confirm('해당 수업의 사범 지정을 삭제하시겠습니까?')) {
+        const confirmed = await requestConfirm('사범 삭제', '해당 수업의 사범 지정을 삭제하시겠습니까?');
+        if (confirmed) {
             try {
                 await dbHelper.deleteItem('instructors', sessionCode);
                 delete window.instructors[sessionCode];
                 renderInstructorManagement();
-                alert('수업 사범 정보가 삭제되었습니다.');
-            } catch (error) { console.error("Error deleting instructor: ", error); alert('삭제 중 오류가 발생했습니다.'); }
+                showAlert('완료', '수업 사범 정보가 삭제되었습니다.');
+            } catch (error) { console.error("Error deleting instructor: ", error); showAlert('오류', '삭제 중 오류가 발생했습니다.'); }
         }
     }
 
@@ -2830,7 +2831,7 @@
         if (isManual) {
             const name = document.getElementById('check-manual-name').value.trim();
             const phone = document.getElementById('check-manual-phone').value.trim() || "0000";
-            if (!name) return alert('이름을 입력해주세요.');
+            if (!name) return showAlert('알림', '이름을 입력해주세요.');
             
             // [NEW] Find or Create Logic
             // 1. Try to find the member from the local list
@@ -2843,7 +2844,7 @@
                 // If no phone is provided and there's only one person with that name
                 member = candidates[0];
             } else if (candidates.length > 1) {
-                return alert(`동명이인(${name})이 있습니다. 전화번호 뒷자리를 입력하여 구분해주세요.`);
+                return showAlert('알림', `동명이인(${name})이 있습니다. 전화번호 뒷자리를 입력하여 구분해주세요.`);
             }
 
             // 2. If not found, create a new one
@@ -2857,12 +2858,12 @@
                     window.members.sort((a, b) => a.name.localeCompare(b.name));
                 } catch (e) {
                     console.error(e);
-                    return alert("회원 등록 중 오류가 발생했습니다.");
+                    return showAlert('오류', "회원 등록 중 오류가 발생했습니다.");
                 }
             }
         } else {
             const memberId = document.getElementById('check-user-select').value;
-            if(!memberId) return alert('회원을 선택해주세요.');
+            if(!memberId) return showAlert('알림', '회원을 선택해주세요.');
             // [FIX] Use String comparison for ID matching
             member = members.find(m => String(m.id) === String(memberId));
         }
@@ -2873,13 +2874,13 @@
     window.confirmAttendanceWithId = async function(memberId, isNewMember = false, manualDate = null, manualSessionCode = null) {
         // [FIX] Use String comparison for ID matching
         const member = members.find(m => String(m.id) === String(memberId));
-        if (!member) return alert('회원 정보를 찾을 수 없습니다.');
+        if (!member) return showAlert('오류', '회원 정보를 찾을 수 없습니다.');
 
         const dateStr = manualDate || document.getElementById('check-date').value;
         const sessionCode = manualSessionCode || document.getElementById('check-session-select').value;
         const session = SESSIONS.find(s => s.code === sessionCode);
         
-        if(!session) return alert('유효한 수업(차수)을 선택해주세요.');
+        if(!session) return showAlert('알림', '유효한 수업(차수)을 선택해주세요.');
 
         // [FIX] Use String comparison for log check
         const alreadyChecked = logs.some(log => String(log.memberId) === String(member.id) && log.date === dateStr && log.sessionCode === session.code);
@@ -3797,7 +3798,7 @@
         const now = Date.now();
         if (now < lockout.until) {
             const remaining = Math.ceil((lockout.until - now) / 1000);
-            alert(`🔐 보안 제한: 비밀번호를 여러 번 틀려 시도가 제한되었습니다.\n${remaining}초 후 다시 시도해주세요.`);
+            showAlert('보안 제한', `비밀번호를 여러 번 틀려 시도가 제한되었습니다.\n${remaining}초 후 다시 시도해주세요.`);
             return Promise.resolve(false);
         }
 
@@ -3827,11 +3828,11 @@
                 lockout.until = Date.now() + 60000; // 1분 차단
                 lockout.attempts = 0;
                 localStorage.setItem('adminLockout', JSON.stringify(lockout));
-                alert('❌ 비밀번호를 5회 연속 틀렸습니다.\n보안을 위해 1분간 재시도가 제한됩니다.');
+                showAlert('보안 제한', '비밀번호를 5회 연속 틀렸습니다.\n보안을 위해 1분간 재시도가 제한됩니다.');
                 closePasswordConfirmModal();
             } else {
                 localStorage.setItem('adminLockout', JSON.stringify(lockout));
-                alert(`❌ 비밀번호가 틀렸습니다. (틀린 횟수: ${lockout.attempts}/5)`);
+                showAlert('오류', `비밀번호가 틀렸습니다. (틀린 횟수: ${lockout.attempts}/5)`);
                 input.value = '';
                 input.focus();
             }
@@ -4060,7 +4061,7 @@
             } else {
                 const dayName = window.DAYS ? window.DAYS[now.getDay()] : "";
                 infoText.innerText = `현재 진행 중인 수업이 없습니다. (${dayName}요일 ${now.getHours()}시)`;
-                if (!isAuto) alert("ℹ️ 현재 진행 중인 수업이 없어 날짜만 오늘로 설정되었습니다.");
+                if (!isAuto) showAlert("알림", "현재 진행 중인 수업이 없어 날짜만 오늘로 설정되었습니다.");
             }
 
             // 아이콘 회전 중지
@@ -4082,12 +4083,12 @@
                 sessionStorage.setItem('appMode', 'admin');
                 showApp();
             } else {
-                alert('비밀번호가 틀렸습니다.');
+                showAlert('로그인 실패', '비밀번호가 틀렸습니다.');
                 passwordField.value = '';
                 passwordField.focus();
             }
         } catch (e) {
-            alert("로그인 처리 중 오류가 발생했습니다.\n" + e.message);
+            showAlert('오류', "로그인 처리 중 오류가 발생했습니다.\n" + e.message);
         }
     }
 
@@ -4112,10 +4113,10 @@
 
         if (inputKey === storedKey) {
             localStorage.setItem('adminPassword', '1234');
-            alert('✅ 비밀번호가 "1234"로 초기화되었습니다.\n새로운 비밀번호로 즉시 변경해 주세요.');
+            showAlert('초기화 완료', '비밀번호가 "1234"로 초기화되었습니다.\n새로운 비밀번호로 즉시 변경해 주세요.');
             location.reload();
         } else {
-            alert('❌ 복구 코드가 일치하지 않습니다.');
+            showAlert('오류', '복구 코드가 일치하지 않습니다.');
         }
     }
 
@@ -4125,14 +4126,14 @@
         const selectedMonth = monthInput.value; // "YYYY-MM"
 
         if (!selectedMonth) {
-            return alert('데이터를 생성할 월을 선택해주세요.');
+            return showAlert('알림', '데이터를 생성할 월을 선택해주세요.');
         }
 
-        if (!confirm(`[주의] ${selectedMonth}월에 대한 테스트 출석 데이터를 생성합니다.\n이 작업은 되돌릴 수 없습니다. 계속하시겠습니까?`)) {
+        if (!(await requestConfirm('테스트 데이터 생성', `[주의] ${selectedMonth}월에 대한 테스트 출석 데이터를 생성합니다.\n이 작업은 되돌릴 수 없습니다. 계속하시겠습니까?`))) {
             return;
         }
 
-        alert('데이터 생성을 시작합니다. 완료 시 알림이 표시됩니다. (약 10-20초 소요)');
+        showAlert('알림', '데이터 생성을 시작합니다. 완료 시 알림이 표시됩니다. (약 10-20초 소요)');
 
         const sampleNames = ["김민준", "이서연", "박도윤", "최지우", "정하준", "조서아", "윤은우", "장시아", "임이준", "오하윤", "한선우", "신지아", "서유준", "권아윤", "강지호", "황서윤", "송시우", "안아인", "유지안", "홍채원", "전로하", "고수호", "문이안", "양지유", "손로운", "배아라", "백이현", "허서준", "남소율", "심다은"];
 
@@ -4179,7 +4180,7 @@
                     }
                 }
             }
-            alert(`✅ 테스트 데이터 생성이 완료되었습니다.\n총 ${generatedLogs.size}개의 출석 기록이 추가되었습니다.`);
+            showAlert('완료', `테스트 데이터 생성이 완료되었습니다.\n총 ${generatedLogs.size}개의 출석 기록이 추가되었습니다.`);
             // [FIX] Reload data from DB to reflect changes in reports immediately
             try {
                 window.logs = await dbHelper.getAll('logs');
@@ -4189,7 +4190,7 @@
             } catch (e) { console.error("Failed to reload data:", e); }
         } catch (error) {
             console.error("Test data generation failed:", error);
-            alert("❌ 데이터 생성 중 오류가 발생했습니다. 콘솔을 확인해주세요.");
+            showAlert('오류', "데이터 생성 중 오류가 발생했습니다. 콘솔을 확인해주세요.");
         }
     };
 
@@ -4499,7 +4500,7 @@
             updateLastSyncTimeDisplay();
         } catch (error) {
             console.error("Application initialization failed:", error);
-            alert("앱을 초기화하는 데 실패했습니다. 페이지를 새로고침 해주세요.");
+            showAlert('초기화 오류', "앱을 초기화하는 데 실패했습니다. 페이지를 새로고침 해주세요.");
         }
     };
 
