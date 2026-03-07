@@ -1109,6 +1109,12 @@
     let newVsExistingChartInstance = null; // [NEW]
     let undoTimer = null; // [NEW] Timer for the undo toast
 
+    // 타이머 관련 전역 변수
+    let inactivityTimer = null;
+    let currentTimerMode = null;
+    let currentTimerDuration = null;
+
+
     // --- [NEW] Custom Modal Helpers ---
     let confirmCallback = null;
     let confirmPromiseResolve = null; // For async/await usage
@@ -1363,6 +1369,49 @@
     }
 
     // --- 3. Helper Functions ---
+    /**
+     * 비활성 타이머를 시작합니다.
+     * @param {number} duration - 타이머 시간 (밀리초)
+     * @param {string} mode - 'admin' 또는 'member'
+     */
+    function startInactivityTimer(duration, mode) {
+        currentTimerDuration = duration;
+        currentTimerMode = mode;
+
+        stopInactivityTimer(); // 기존 타이머가 있다면 중지
+
+        inactivityTimer = setTimeout(() => {
+            const title = mode === 'admin' ? "자동 로그아웃" : "출석 종료";
+            const message = mode === 'admin'
+                ? "장시간 활동이 없어 자동 로그아웃됩니다."
+                : "장시간 활동이 없어 출석 화면을 종료합니다.";
+            
+            showAlert(title, message);
+            setTimeout(showLoginScreen, 2000); // 2초 후 초기화면으로 이동
+        }, duration);
+    }
+
+    /**
+     * 비활성 타이머를 중지합니다.
+     */
+    function stopInactivityTimer() {
+        if (inactivityTimer) {
+            clearTimeout(inactivityTimer);
+        }
+        inactivityTimer = null;
+        currentTimerMode = null;
+        currentTimerDuration = null;
+    }
+
+    /**
+     * 사용자 활동 감지 시 타이머를 재설정합니다.
+     */
+    function resetInactivityTimer() {
+        if (currentTimerMode && currentTimerDuration) {
+            startInactivityTimer(currentTimerDuration, currentTimerMode);
+        }
+    }
+
     window.getWeekOfMonth = function(dateStr) {
         if (!dateStr) return 0; // [FIX] Prevent error on undefined date
         // [FIX] Parse date string as local time to avoid timezone shifts
@@ -3959,6 +4008,7 @@
 
     // --- 10. App Initialization & Login ---
     window.showLoginScreen = function() {
+        stopInactivityTimer(); // 타이머 중지
         const startScreen = document.getElementById('start-screen');
         if (startScreen) startScreen.style.display = 'flex';
         const mainContent = document.getElementById('app-main-content');
@@ -4016,12 +4066,14 @@
                 }
             };
             forceInit();
+            startInactivityTimer(5 * 60 * 1000, 'member'); // 5분 타이머 시작
         } else {
             document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
             document.getElementById('btn-exit-member-mode').classList.add('hidden');
             // 관리자 모드일 때는 회원관리 페이지로 이동
             const firstNavItem = document.querySelector('.nav-item');
             if (firstNavItem) switchPage(firstNavItem, 'members');
+            startInactivityTimer(5 * 60 * 1000, 'admin'); // 5분 타이머 시작
         }
 
         // Run initial setup that requires the DOM to be visible
@@ -4407,6 +4459,11 @@
         const savedTheme = localStorage.getItem('appTheme') || 'indigo';
         document.body.dataset.theme = savedTheme;
         document.querySelector('meta[name="theme-color"]').setAttribute('content', THEMES[savedTheme]['600']);
+
+        // 사용자 활동 감지를 위한 이벤트 리스너 등록
+        ['click', 'touchstart', 'keydown', 'scroll'].forEach(event => {
+            window.addEventListener(event, resetInactivityTimer, true);
+        });
 
         try {
             await dbHelper.initDB();
