@@ -1663,9 +1663,8 @@
         const memberCounts = {};
         logsForMonth.forEach(log => {
             if (!memberCounts[log.memberId]) {
-                // [FIX] Always get the latest member info
                 const m = window.members.find(mem => String(mem.id) === String(log.memberId));
-                const currentName = m ? m.name : log.memberName; // Fallback to log's name if member is deleted
+                const currentName = m ? m.name : '알수없음';
                 memberCounts[log.memberId] = { count: 0, name: currentName, phone: m ? m.phone : "" };
             }
             memberCounts[log.memberId].count++;
@@ -1788,7 +1787,7 @@
             const week = getWeekOfMonth(log.date);
             if (!individualWeekly[log.memberId] && log.memberId) { // [FIX] Add guard for log.memberId
                 const m = window.members.find(mem => String(mem.id) === String(log.memberId));
-                const currentName = m ? m.name : log.memberName;
+                const currentName = m ? m.name : '알수없음';
                 individualWeekly[log.memberId] = { id: log.memberId, name: currentName, weeks: {1:0, 2:0, 3:0, 4:0, 5:0}, total: 0 };
             }
             if (individualWeekly[log.memberId].weeks[week] !== undefined) individualWeekly[log.memberId].weeks[week]++;
@@ -1889,7 +1888,7 @@
 
             if (!memberWeeklyPresence[log.memberId]) {
                 const m = window.members.find(mem => String(mem.id) === String(log.memberId));
-                const currentName = m ? m.name : log.memberName;
+                const currentName = m ? m.name : '알수없음';
                 memberWeeklyPresence[log.memberId] = { name: currentName, weeks: new Set() };
             }
             memberWeeklyPresence[log.memberId].weeks.add(week);
@@ -2184,7 +2183,7 @@
         yearlyLogs.forEach(log => {
             if (!memberMonthlyPresence[log.memberId]) {
                 const m = allMembers.find(mem => String(mem.id) === String(log.memberId));
-                const currentName = m ? m.name : log.memberName;
+                const currentName = m ? m.name : '알수없음';
                 memberMonthlyPresence[log.memberId] = { name: currentName, months: new Set() };
             }
             memberMonthlyPresence[log.memberId].months.add(log.date.substring(5, 7)); // "MM"
@@ -2843,8 +2842,7 @@
                     duplicateCount++;
                 } else {
                     const newLogData = {
-                        memberId: targetMember.id, 
-                        memberName: targetMember.name, 
+                        memberId: targetMember.id,
                         date: dateStr, 
                         sessionCode: session.code, 
                         sessionName: session.name, 
@@ -3005,8 +3003,7 @@
             showUndoToast('오늘 이 수업에는 이미 출석하셨어요. 😊');
         } else {
             let newLogData = {
-                memberId: member.id, 
-                memberName: member.name, 
+                memberId: member.id,
                 date: dateStr, 
                 sessionCode: session.code, 
                 sessionName: session.name, 
@@ -3212,7 +3209,7 @@
 
         // [FIX] Get current member name for the confirmation dialog
         const member = window.members.find(m => String(m.id) === String(logToDelete.memberId));
-        const currentMemberName = member ? member.name : logToDelete.memberName;
+        const currentMemberName = member ? member.name : '알수없음';
 
         const confirmed = await requestConfirm('기록 삭제', `[${currentMemberName}]님의\n${logToDelete.date} (${logToDelete.sessionName || '미분류'}) 출석 기록을 삭제하시겠습니까?`);
         if (!confirmed) return;
@@ -3262,8 +3259,7 @@
         const attendeeIds = [...new Set(sessionLogs.map(log => log.memberId))];
         const attendees = attendeeIds.map(id => {
             const member = window.members.find(m => String(m.id) === String(id));
-            // Fallback to a name from the logs if member was deleted
-            return member ? member.name : (sessionLogs.find(l => String(l.memberId) === String(id))?.memberName || '알수없음');
+            return member ? member.name : '알수없음';
         }).sort((a, b) => a.localeCompare(b));
 
         document.getElementById('session-attendees-title').innerText = `[${sessionName}] 참석자`;
@@ -4300,7 +4296,7 @@
                         const alreadyExistsInDB = window.logs.some(l => l.memberId === targetMember.id && l.date === dateStr && l.sessionCode === session.code);
                         
                         if (!alreadyExistsInDB && !generatedLogs.has(logKey)) {
-                            const newLogData = { memberId: targetMember.id, memberName: targetMember.name, date: dateStr, sessionCode: session.code, sessionName: session.name, timestamp: new Date(year, month - 1, day, session.start).toLocaleString() + " (테스트)" };
+                            const newLogData = { memberId: targetMember.id, date: dateStr, sessionCode: session.code, sessionName: session.name, timestamp: new Date(year, month - 1, day, session.start).toLocaleString() + " (테스트)" };
                             await dbHelper.add('logs', newLogData);
                             generatedLogs.add(logKey);
                         }
