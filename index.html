@@ -4532,8 +4532,9 @@
         }
 
         // 사용자 활동 감지를 위한 이벤트 리스너 등록
+        // 'scroll' 이벤트는 버블링되지 않으므로, document에 캡처 리스너를 등록하여 모든 스크롤을 감지합니다.
         ['click', 'touchstart', 'keydown', 'scroll'].forEach(event => {
-            window.addEventListener(event, resetInactivityTimer, true);
+            document.addEventListener(event, resetInactivityTimer, true);
         });
 
         try {
