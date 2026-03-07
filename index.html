@@ -2648,28 +2648,62 @@
             showAlert('알림', '이름을 입력해야 합니다.');
             return;
         }
+
+        const instructorData = { sessionCode, name: newName };
+
         try {
-            const instructorData = { sessionCode, name: newName.trim() };
-            await dbHelper.put('instructors', instructorData);
+            showSyncStatus('syncing', '사범 정보 저장 중...');
+            if (navigator.onLine && firebaseHelper.initFirebase()) {
+                // Online: Save to Firebase first, then local
+                await firebase.firestore().collection('instructors').doc(sessionCode).set({ name: newName });
+                await dbHelper.put('instructors', instructorData);
+            } else {
+                // Offline: Save to local with pending status
+                instructorData.syncStatus = 'pending';
+                await dbHelper.put('instructors', instructorData);
+            }
+
+            // Update in-memory state
             window.instructors[sessionCode] = newName;
-            renderInstructorManagement();
+            
+            showSyncStatus('synced', '저장 완료');
             showAlert('완료', '수업 사범 정보가 업데이트되었습니다.');
+            renderInstructorManagement();
             closeInstructorEditModal();
         } catch (error) { 
             console.error("Error updating instructor: ", error); 
             showAlert('오류', '업데이트 중 오류가 발생했습니다.'); 
+            showSyncStatus('online');
         }
     }
 
     window.deleteInstructor = async function(sessionCode) {
         const confirmed = await requestConfirm('사범 삭제', '해당 수업의 사범 지정을 삭제하시겠습니까?');
-        if (confirmed) {
-            try {
-                await dbHelper.deleteItem('instructors', sessionCode);
-                delete window.instructors[sessionCode];
-                renderInstructorManagement();
-                showAlert('완료', '수업 사범 정보가 삭제되었습니다.');
-            } catch (error) { console.error("Error deleting instructor: ", error); showAlert('오류', '삭제 중 오류가 발생했습니다.'); }
+        if (!confirmed) return;
+
+        if (!navigator.onLine) {
+            return showAlert('오프라인', '오프라인 상태에서는 사범 정보를 삭제할 수 없습니다.\n인터넷 연결을 확인하고 다시 시도해주세요.');
+        }
+
+        try {
+            showSyncStatus('syncing', '사범 정보 삭제 중...');
+            
+            // Delete from Firebase
+            if (firebaseHelper.initFirebase()) {
+                await firebase.firestore().collection('instructors').doc(sessionCode).delete();
+            }
+
+            // Delete from local
+            await dbHelper.deleteItem('instructors', sessionCode);
+            delete window.instructors[sessionCode];
+
+            showSyncStatus('synced', '삭제 완료');
+            showAlert('완료', '수업 사범 정보가 삭제되었습니다.');
+            renderInstructorManagement();
+        } catch (error) { 
+            console.error("Error deleting instructor: ", error); 
+            showAlert('오류', '삭제 중 오류가 발생했습니다.'); 
+            showSyncStatus('online');
         }
     }
 
@@ -4483,7 +4517,6 @@
         }
     }
 
-    // [NEW] Manual Sync function to reduce Firebase costs
     async function manualSyncWithFirebase() {
         if (!navigator.onLine) {
             return showAlert('오프라인', '데이터를 동기화하려면 인터넷 연결이 필요합니다.');
@@ -4494,7 +4527,10 @@
 
         showSyncStatus('syncing', '수동 동기화 중...');
         try {
-            // 1. Fetch all data from Firebase
+            // [FIX] 1. Sync any pending local data to server FIRST
+            await syncPendingData();
+
+            // 2. Fetch all data from Firebase
             const [membersSnapshot, logsSnapshot, instructorsSnapshot] = await Promise.all([
                 firebaseHelper.getCollection('members').get(),
                 firebaseHelper.getCollection('logs').get(),
@@ -4505,30 +4541,26 @@
             const logsData = logsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             const instructorsData = instructorsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-            // [NEW] Get counts for sync details
             const membersCount = membersSnapshot.size;
             const logsCount = logsSnapshot.size;
             const instructorsCount = instructorsSnapshot.size;
 
-            // 2. Overwrite local IndexedDB with server data
+            // 3. Overwrite local IndexedDB with server data
             await Promise.all([
                 dbHelper.bulkPut('members', membersData),
                 dbHelper.bulkPut('logs', logsData),
                 dbHelper.bulkPut('instructors', instructorsData.map(d => ({sessionCode: d.id, name: d.name})))
             ]);
 
-            // 3. Reload data into memory
+            // 4. Reload data into memory
             window.members = membersData.sort((a, b) => a.name.localeCompare(b.name));
             window.logs = logsData.sort((a, b) => b.id - a.id);
             window.instructors = instructorsData.reduce((acc, curr) => {
-                acc[curr.sessionCode] = curr.name;
+                acc[curr.id] = curr.name; // [FIX] Use doc.id as key
                 return acc;
             }, {});
 
-            // 4. Sync any pending local data to server
-            await syncPendingData();
-
-            // [NEW] Store and display last sync time
+            // 5. Store and display last sync time
             const now = new Date().toISOString();
             localStorage.setItem('lastSyncTime', now);
             updateLastSyncTimeDisplay();
@@ -4537,7 +4569,7 @@
             const syncDetails = `- 회원: ${membersCount}건\n- 출석 기록: ${logsCount}건\n- 사범 정보: ${instructorsCount}건`;
             showAlert('동기화 완료', `서버로부터 최신 데이터를 가져왔습니다.\n\n[동기화된 항목]\n${syncDetails}`);
 
-            // 5. Refresh current view
+            // 6. Refresh current view
             if (currentMode === 'members') renderMembers();
             if (currentMode === 'reports') showReports(currentActiveReportTabId);
             if (currentMode === 'instructors') renderInstructorManagement();
