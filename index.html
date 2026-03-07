@@ -2864,22 +2864,35 @@
             }
         }
         
+        // [REFACTOR] Build a user-friendly result message
+        const instructorName = window.instructors[session.code];
+        const sessionDisplayName = session.name + (instructorName ? ` (${instructorName} 사범)` : '');
+        
+        let messageLines = [];
+
         if (successCount > 0) {
             playSound();
-            const namesStr = successNames.join(', ');
-            const instructorName = window.instructors[session.code];
-            const sessionDisplayName = session.name + (instructorName ? ` (${instructorName} 사범)` : '');
-            let alertMessage = `✅ 등록 완료\n일자: ${dateStr}\n차수: ${sessionDisplayName}\n성함: ${namesStr}\n\n(총 ${successCount}명 처리 / 중복 제외: ${duplicateCount}명 / 신규 가입: ${newMemberCount}명)`;
-            if (skippedNames.length > 0) {
-                alertMessage += `\n\n⚠️ 동명이인 문제로 건너뜀: ${[...new Set(skippedNames)].join(', ')} (전화번호 필요)`;
+            messageLines.push(`✅ 새로 출석: ${successCount}명`);
+            if (newMemberCount > 0) {
+                messageLines.push(`✨ 그 중 신규 등록: ${newMemberCount}명`);
             }
-            showAlert('일괄 처리 완료', alertMessage);
+        }
+        if (duplicateCount > 0) {
+            messageLines.push(`👍 이미 출석 완료: ${duplicateCount}명`);
+        }
+        if (skippedNames.length > 0) {
+            const uniqueSkipped = [...new Set(skippedNames)];
+            messageLines.push(`⚠️ 건너뜀 (동명이인): ${uniqueSkipped.length}명 (${uniqueSkipped.join(', ')})`);
+        }
+
+        if (messageLines.length > 0) {
+            let finalMessage = `[${sessionDisplayName} / ${dateStr}]\n\n` + messageLines.join('\n');
+            if (skippedNames.length > 0) {
+                finalMessage += '\n\n* 건너뛴 회원은 이름과 전화번호 뒷자리를 함께 입력해주세요.';
+            }
+            showAlert('일괄 처리 결과', finalMessage);
         } else {
-            let alertMessage = `처리할 새로운 명단이 없습니다.\n(중복 제외: ${duplicateCount}명)`;
-            if (skippedNames.length > 0) {
-                alertMessage += `\n\n⚠️ 동명이인 문제로 건너뜀: ${[...new Set(skippedNames)].join(', ')} (전화번호 필요)`;
-            }
-            showAlert('알림', alertMessage);
+            showAlert('알림', '처리할 새로운 명단이 없습니다.');
         }
         
         document.getElementById('bulk-text-area').value = '';
