@@ -2783,53 +2783,63 @@
         const lines = text.split(/[\n,]+/).map(n => n.trim()).filter(n => n.length > 0);
         
         let successCount = 0; let newMemberCount = 0; let duplicateCount = 0;
+        let skippedNames = [];
         let successNames = [];
         
-        const processedInBatch = new Set();
+        // [FIX] This set tracks member IDs processed in THIS batch to prevent duplicate attendance logs.
+        const processedInThisBatch = new Set();
         
         for (const line of lines) {
             let inputName = line; let inputPhone = null;
             const match = line.match(/^(.*?)[\s]+(\d{4})$/);
             if (match) { inputName = match[1].trim(); inputPhone = match[2]; }
             
-            let candidates = window.members.filter(m => m.name === inputName);
             let targetMember = null;
 
-            if (candidates.length === 0) {
-                const newMemberData = { name: inputName, phone: inputPhone || "0000", registeredAt: new Date().toISOString(), syncStatus: 'pending' };
-                const newId = await dbHelper.add('members', newMemberData);
-                targetMember = { id: newId, ...newMemberData };
-                window.members.push(targetMember);
-                newMemberCount++;
-            } else if (candidates.length === 1) {
-                if (inputPhone && candidates[0].phone !== "0000" && candidates[0].phone !== inputPhone) {
-                    const newMemberData = { name: inputName, phone: inputPhone, registeredAt: new Date().toISOString(), syncStatus: 'pending' };
-                    const newId = await dbHelper.add('members', newMemberData);
-                    targetMember = { id: newId, ...newMemberData };
-                    window.members.push(targetMember);
-                    newMemberCount++;
-                } else {
+            // [REFACTOR] Robust member resolution logic
+            // 1. Find exact match (name + phone)
+            if (inputPhone) {
+                targetMember = window.members.find(m => m.name === inputName && m.phone === inputPhone);
+            } else { // No phone provided, look for unique name
+                const candidates = window.members.filter(m => m.name === inputName);
+                if (candidates.length === 1) {
                     targetMember = candidates[0];
-                    if(targetMember.phone === "0000" && inputPhone) {
-                        targetMember.phone = inputPhone;
-                        await dbHelper.put('members', targetMember);
-                    }
+                } else if (candidates.length > 1) {
+                    skippedNames.push(inputName);
+                    continue; // Skip ambiguous homonym
                 }
-            } else {
-                if (inputPhone) targetMember = candidates.find(m => m.phone === inputPhone);
-                if (!targetMember && inputPhone) {
-                    const newMemberData = { name: inputName, phone: inputPhone, registeredAt: new Date().toISOString(), syncStatus: 'pending' };
-                    const newId = await dbHelper.add('members', newMemberData);
-                    targetMember = { id: newId, ...newMemberData };
-                    window.members.push(targetMember);
-                    newMemberCount++;
+            }
+
+            // 2. If no member found, it's either a new member or an update to an existing one
+            if (!targetMember) {
+                const memberToUpdate = window.members.find(m => m.name === inputName && m.phone === '0000');
+                if (memberToUpdate && inputPhone) {
+                    // Update existing member who was missing a phone number
+                    targetMember = memberToUpdate;
+                    targetMember.phone = inputPhone;
+                    await dbHelper.put('members', targetMember);
+                } else {
+                    // It's a genuinely new member (or a homonym with a new phone number)
+                    // Double-check for duplicates before creating
+                    const isDuplicate = window.members.some(m => m.name === inputName && m.phone === (inputPhone || "0000"));
+                    if (isDuplicate) {
+                        targetMember = window.members.find(m => m.name === inputName && m.phone === (inputPhone || "0000"));
+                    } else {
+                        const newMemberData = { name: inputName, phone: inputPhone || "0000", registeredAt: new Date().toISOString(), syncStatus: 'pending' };
+                        const newId = await dbHelper.add('members', newMemberData);
+                        targetMember = { id: newId, ...newMemberData };
+                        window.members.push(targetMember);
+                        newMemberCount++;
+                    }
                 }
             }
             
             if (targetMember) {
-                const alreadyExists = logs.some(l => l.memberId === targetMember.id && l.date === dateStr && l.sessionCode === sessionCode);
-                const alreadyInBatch = processedInBatch.has(targetMember.id);
-                if(alreadyExists || alreadyInBatch) {
+                // Check for duplicate attendance in DB and in the current batch
+                const alreadyExistsInDB = logs.some(l => String(l.memberId) === String(targetMember.id) && l.date === dateStr && l.sessionCode === sessionCode);
+                const alreadyInThisBatch = processedInThisBatch.has(targetMember.id);
+                
+                if(alreadyExistsInDB || alreadyInThisBatch) {
                     duplicateCount++;
                 } else {
                     const newLogData = {
@@ -2839,12 +2849,15 @@
                         sessionCode: session.code, 
                         sessionName: session.name, 
                         timestamp: new Date().toLocaleString() + " (일괄입력)",
-                        syncStatus: 'pending' // Always mark as pending for the sync cycle
+                        syncStatus: 'pending'
                     };
                     const newLogId = await dbHelper.add('logs', newLogData);
                     newLogData.id = newLogId;
                     window.logs.unshift(newLogData);
-                    processedInBatch.add(targetMember.id);
+                    
+                    // [FIX] Add member ID to the set for this batch
+                    processedInThisBatch.add(targetMember.id);
+                    
                     successNames.push(targetMember.name);
                     successCount++;
                 }
@@ -2856,9 +2869,17 @@
             const namesStr = successNames.join(', ');
             const instructorName = window.instructors[session.code];
             const sessionDisplayName = session.name + (instructorName ? ` (${instructorName} 사범)` : '');
-            showAlert('일괄 처리 완료', `✅ 등록 완료\n일자: ${dateStr}\n차수: ${sessionDisplayName}\n성함: ${namesStr}\n\n(총 ${successCount}명 처리 / 중복 제외: ${duplicateCount}명 / 신규 가입: ${newMemberCount}명)`);
+            let alertMessage = `✅ 등록 완료\n일자: ${dateStr}\n차수: ${sessionDisplayName}\n성함: ${namesStr}\n\n(총 ${successCount}명 처리 / 중복 제외: ${duplicateCount}명 / 신규 가입: ${newMemberCount}명)`;
+            if (skippedNames.length > 0) {
+                alertMessage += `\n\n⚠️ 동명이인 문제로 건너뜀: ${[...new Set(skippedNames)].join(', ')} (전화번호 필요)`;
+            }
+            showAlert('일괄 처리 완료', alertMessage);
         } else {
-            showAlert('알림', `처리할 새로운 명단이 없습니다.\n(중복 제외: ${duplicateCount}명)`);
+            let alertMessage = `처리할 새로운 명단이 없습니다.\n(중복 제외: ${duplicateCount}명)`;
+            if (skippedNames.length > 0) {
+                alertMessage += `\n\n⚠️ 동명이인 문제로 건너뜀: ${[...new Set(skippedNames)].join(', ')} (전화번호 필요)`;
+            }
+            showAlert('알림', alertMessage);
         }
         
         document.getElementById('bulk-text-area').value = '';
