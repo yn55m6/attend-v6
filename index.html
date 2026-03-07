@@ -3002,7 +3002,7 @@
         const alreadyChecked = logs.some(log => String(log.memberId) === String(member.id) && log.date === dateStr && log.sessionCode === session.code);
         
         if(alreadyChecked) {
-            showUndoToast('⚠️ 이미 출석 처리되었습니다.');
+            showUndoToast('오늘 이 수업에는 이미 출석하셨어요. 😊');
         } else {
             let newLogData = {
                 memberId: member.id, 
