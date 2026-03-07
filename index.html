@@ -298,6 +298,14 @@
                 <button onclick="openThemeModal()" class="w-full mt-2 py-3 bg-gray-100 text-gray-600 rounded-lg text-base font-bold hover:bg-gray-200 border border-gray-200" title="앱의 전체적인 색상 테마를 변경합니다.">
                     <i class="fas fa-palette mr-2"></i>테마 설정
                 </button>
+                <div class="mt-2 py-3 px-4 bg-gray-100 rounded-lg border border-gray-200 flex justify-between items-center">
+                    <label for="inactivity-timeout-select" class="text-base font-bold text-gray-600 flex items-center" title="지정된 시간 동안 활동이 없으면 자동으로 초기 화면으로 돌아갑니다.">
+                        <i class="fas fa-stopwatch mr-2"></i>자동 로그아웃 시간
+                    </label>
+                    <select id="inactivity-timeout-select" onchange="setInactivityTimeout(this.value)" class="p-2 border rounded bg-white text-base font-bold">
+                        <option value="300000">5분</option><option value="600000">10분</option><option value="900000">15분</option><option value="1800000">30분</option><option value="0">사용 안 함</option>
+                    </select>
+                </div>
                 <button onclick="showAllQRCodesForPrint()" class="w-full mt-2 py-3 bg-gray-100 text-gray-600 rounded-lg text-base font-bold hover:bg-gray-200 border border-gray-200" title="모든 수업(차수)의 출석용 QR 코드를 인쇄용 페이지에서 봅니다.">
                     <i class="fas fa-print mr-2"></i>차수별 QR 코드 출력
                 </button>
@@ -1113,6 +1121,7 @@
     let inactivityTimer = null;
     let currentTimerMode = null;
     let currentTimerDuration = null;
+    let inactivityTimeoutDuration = 5 * 60 * 1000; // Default 5 minutes
 
 
     // --- [NEW] Custom Modal Helpers ---
@@ -1375,6 +1384,12 @@
      * @param {string} mode - 'admin' 또는 'member'
      */
     function startInactivityTimer(duration, mode) {
+        // [NEW] If timeout is disabled, do nothing.
+        if (duration <= 0) {
+            stopInactivityTimer();
+            return;
+        }
+
         currentTimerDuration = duration;
         currentTimerMode = mode;
 
@@ -1409,6 +1424,23 @@
     function resetInactivityTimer() {
         if (currentTimerMode && currentTimerDuration) {
             startInactivityTimer(currentTimerDuration, currentTimerMode);
+        }
+    }
+
+    window.setInactivityTimeout = function(duration) {
+        inactivityTimeoutDuration = parseInt(duration, 10);
+        localStorage.setItem('inactivityTimeoutDuration', inactivityTimeoutDuration);
+        
+        const selectedOption = document.querySelector(`#inactivity-timeout-select option[value='${duration}']`);
+        const durationText = selectedOption ? selectedOption.innerText : `${duration / 60000}분`;
+
+        showAlert('설정 저장', `자동 로그아웃 시간이 ${durationText}으로 설정되었습니다.`);
+        
+        // If a timer is currently running, reset it with the new duration
+        if (currentTimerMode) {
+            // The running timer will be reset on the next user activity via resetInactivityTimer,
+            // or we can force a reset now. Let's force it.
+            startInactivityTimer(inactivityTimeoutDuration, currentTimerMode);
         }
     }
 
@@ -4066,14 +4098,14 @@
                 }
             };
             forceInit();
-            startInactivityTimer(5 * 60 * 1000, 'member'); // 5분 타이머 시작
+            startInactivityTimer(inactivityTimeoutDuration, 'member');
         } else {
             document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
             document.getElementById('btn-exit-member-mode').classList.add('hidden');
             // 관리자 모드일 때는 회원관리 페이지로 이동
             const firstNavItem = document.querySelector('.nav-item');
             if (firstNavItem) switchPage(firstNavItem, 'members');
-            startInactivityTimer(5 * 60 * 1000, 'admin'); // 5분 타이머 시작
+            startInactivityTimer(inactivityTimeoutDuration, 'admin');
         }
 
         // Run initial setup that requires the DOM to be visible
@@ -4459,6 +4491,16 @@
         const savedTheme = localStorage.getItem('appTheme') || 'indigo';
         document.body.dataset.theme = savedTheme;
         document.querySelector('meta[name="theme-color"]').setAttribute('content', THEMES[savedTheme]['600']);
+
+        // [NEW] Load inactivity timeout setting
+        const savedTimeout = localStorage.getItem('inactivityTimeoutDuration');
+        if (savedTimeout !== null) {
+            inactivityTimeoutDuration = parseInt(savedTimeout, 10);
+        }
+        const timeoutSelect = document.getElementById('inactivity-timeout-select');
+        if (timeoutSelect) {
+            timeoutSelect.value = inactivityTimeoutDuration;
+        }
 
         // 사용자 활동 감지를 위한 이벤트 리스너 등록
         ['click', 'touchstart', 'keydown', 'scroll'].forEach(event => {
