@@ -2434,7 +2434,7 @@
     window.exportReportToCSV = function() {
         const activeTabButton = document.querySelector('#report-tabs button.bg-theme-100');
         if (!activeTabButton) {
-            alert('활성화된 리포트 탭을 찾을 수 없습니다.');
+            showAlert('알림', '활성화된 리포트 탭을 찾을 수 없습니다.');
             return;
         }
 
@@ -2504,14 +2504,14 @@
                 fileName = `report-inactive-members-last-${period}-days.csv`;
                 break;
             case 'report-content-congestion':
-                alert('혼잡도 분석 차트는 이미지로 캡처하여 사용해주세요.'); return;
+                showAlert('알림', '혼잡도 분석 차트는 이미지로 캡처하여 사용해주세요.'); return;
             case 'report-content-yearly-summary':
                 // Simple export for yearly summary could be added, but for now alert
-                alert('연말 결산 데이터는 화면에서 확인해주세요.'); return;
+                showAlert('알림', '연말 결산 데이터는 화면에서 확인해주세요.'); return;
             default:
-                alert('현재 탭의 데이터는 CSV로 내보낼 수 없습니다.'); return;
+                showAlert('알림', '현재 탭의 데이터는 CSV로 내보낼 수 없습니다.'); return;
         }
-        if (rows.length === 0) { alert('내보낼 데이터가 없습니다.'); return; }
+        if (rows.length === 0) { showAlert('알림', '내보낼 데이터가 없습니다.'); return; }
         const csvContent = createCSV(headers, rows);
         const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
