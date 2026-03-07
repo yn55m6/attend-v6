@@ -3932,7 +3932,15 @@
     }
 
     window.switchPage = function(element, pageId) {
-        currentMode = pageId; // 현재 모드 설정
+        // [NEW] Clear search input when leaving the members page
+        if (currentMode === 'members' && pageId !== 'members') {
+            const searchInput = document.getElementById('member-list-search');
+            if (searchInput) {
+                searchInput.value = '';
+            }
+        }
+
+        currentMode = pageId; // Set current mode to the new page
         const pages = document.querySelectorAll('.page');
         const targetPage = document.getElementById('page-' + pageId);
 
