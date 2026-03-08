@@ -4525,38 +4525,47 @@
             return showAlert('설정 오류', 'Firebase 설정이 올바르지 않아 동기화할 수 없습니다.');
         }
 
-        showSyncStatus('syncing', '수동 동기화 중...');
+        showSyncStatus('syncing', '동기화 준비 중...');
         try {
-            // [FIX] 1. Sync any pending local data to server FIRST
+            // 1. Sync any pending local data to server FIRST to avoid data loss
             await syncPendingData();
 
             // 2. Fetch all data from Firebase
+            showSyncStatus('syncing', '서버 데이터 가져오는 중...');
             const [membersSnapshot, logsSnapshot, instructorsSnapshot] = await Promise.all([
                 firebaseHelper.getCollection('members').get(),
                 firebaseHelper.getCollection('logs').get(),
                 firebaseHelper.getCollection('instructors').get()
             ]);
 
-            const membersData = membersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            const logsData = logsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            const instructorsData = instructorsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const serverMembers = membersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const serverLogs = logsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const serverInstructors = instructorsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-            const membersCount = membersSnapshot.size;
-            const logsCount = logsSnapshot.size;
-            const instructorsCount = instructorsSnapshot.size;
+            const membersCount = serverMembers.length;
+            const logsCount = serverLogs.length;
+            const instructorsCount = serverInstructors.length;
 
-            // 3. Overwrite local IndexedDB with server data
+            // 3. [REFACTORED] Clear local DB and overwrite with server data for a true sync
+            showSyncStatus('syncing', '로컬 데이터베이스 정리 중...');
             await Promise.all([
-                dbHelper.bulkPut('members', membersData),
-                dbHelper.bulkPut('logs', logsData),
-                dbHelper.bulkPut('instructors', instructorsData.map(d => ({sessionCode: d.id, name: d.name})))
+                dbHelper.clear('members'),
+                dbHelper.clear('logs'),
+                dbHelper.clear('instructors')
+            ]);
+            
+            showSyncStatus('syncing', '로컬 데이터베이스 업데이트 중...');
+            await Promise.all([
+                dbHelper.bulkPut('members', serverMembers),
+                dbHelper.bulkPut('logs', serverLogs),
+                dbHelper.bulkPut('instructors', serverInstructors.map(d => ({sessionCode: d.id, name: d.name})))
             ]);
 
             // 4. Reload data into memory
-            window.members = membersData.sort((a, b) => a.name.localeCompare(b.name));
-            window.logs = logsData.sort((a, b) => b.id - a.id);
-            window.instructors = instructorsData.reduce((acc, curr) => {
-                acc[curr.id] = curr.name; // [FIX] Use doc.id as key
+            window.members = serverMembers.sort((a, b) => a.name.localeCompare(b.name));
+            window.logs = serverLogs.sort((a, b) => (b.id && a.id) ? String(b.id).localeCompare(String(a.id)) : 0);
+            window.instructors = serverInstructors.reduce((acc, curr) => {
+                acc[curr.id] = curr.name;
                 return acc;
             }, {});
 
@@ -4565,9 +4574,9 @@
             localStorage.setItem('lastSyncTime', now);
             updateLastSyncTimeDisplay();
 
-            showSyncStatus('synced', '동기화 완료!');
             const syncDetails = `- 회원: ${membersCount}건\n- 출석 기록: ${logsCount}건\n- 사범 정보: ${instructorsCount}건`;
-            showAlert('동기화 완료', `서버로부터 최신 데이터를 가져왔습니다.\n\n[동기화된 항목]\n${syncDetails}`);
+            showSyncStatus('synced', '동기화 완료!');
+            showAlert('동기화 완료', `로컬 데이터를 먼저 전송한 후, 서버로부터 최신 데이터를 가져와 동기화했습니다.\n\n[동기화된 항목]\n${syncDetails}`);
 
             // 6. Refresh current view
             if (currentMode === 'members') renderMembers();
