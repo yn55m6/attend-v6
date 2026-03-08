@@ -1073,6 +1073,27 @@
     // Register ChartDataLabels plugin globally
     Chart.register(ChartDataLabels);
 
+    // [NEW] Plugin to display text when chart has no data
+    const noDataPlugin = {
+        id: 'noData',
+        afterDraw: (chart) => {
+            // Check if all datasets are empty or all data points are zero/null/undefined
+            const hasData = chart.data.datasets.length > 0 && chart.data.datasets.some(ds => ds.data.some(d => d !== 0 && d !== null && d !== undefined));
+            if (!hasData) {
+                const { ctx, chartArea: { left, top, width, height } } = chart;
+                ctx.save();
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = "bold 16px 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif";
+                ctx.fillStyle = '#9ca3af'; // text-gray-400
+                ctx.fillText('표시할 데이터가 없습니다.', left + width / 2, top + height / 2);
+                ctx.restore();
+            }
+        }
+    };
+    Chart.register(noDataPlugin);
+
+
     window.DAYS = ["일", "월", "화", "수", "목", "금", "토"];
     const DAYS = window.DAYS;
 
@@ -1192,6 +1213,18 @@
         closeCustomPrompt(value);
     }
 
+    // [NEW] Helper function to generate 'no data' placeholder HTML
+    function getNoDataHtml(message, subMessage = '') {
+        const subMessageHtml = subMessage ? `<p class="text-sm mt-2">${subMessage}</p>` : '';
+        return `
+            <div class="text-center py-16 text-gray-400 bg-gray-50 rounded-lg border border-gray-200">
+                <i class="fas fa-info-circle text-4xl mb-4 text-gray-300"></i>
+                <p class="font-bold text-lg text-gray-500">${message}</p>
+                ${subMessageHtml}
+            </div>
+        `;
+    }
+
     // [NEW] Function to show the undo toast
     function showUndoToast(message, onUndoCallback) {
         const toast = document.getElementById('undo-toast');
@@ -1229,6 +1262,7 @@
     // [NEW] Helper function to populate the attendance check dropdown
     function updateCheckUserSelect() {
         const select = document.getElementById('check-user-select');
+        if (!select) return;
         const currentValue = select.value; // Preserve selection if possible
 
         select.innerHTML = '<option value="">⬇️ 여기를 눌러 이름 선택</option>'; 
@@ -1647,6 +1681,12 @@
     const renderReport_MemberRank = (logsForMonth) => {
         const container = document.getElementById('report-member-ranking');
         container.innerHTML = ''; // 이전 내용 초기화
+
+        if (logsForMonth.length === 0) {
+            container.innerHTML = getNoDataHtml('해당 월의 출석 데이터가 없습니다.');
+            reportDataCache.memberRank = [];
+            return;
+        }
         
         const table = document.createElement('table');
         table.className = 'w-full text-sm text-left text-gray-500';
@@ -1672,24 +1712,18 @@
         const sortedMembers = Object.values(memberCounts).sort((a, b) => b.count - a.count);
         reportDataCache.memberRank = sortedMembers;
 
-        if (sortedMembers.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-gray-400">데이터가 없습니다.</td></tr>';
-        } else {
-            sortedMembers.forEach((item, index) => {
-                // [NEW] Add Crown for 1st place
-                const rankDisplay = index === 0 ? `<span class="text-yellow-500 mr-1"><i class="fas fa-crown"></i></span>1` : index + 1;
-
-                const tr = document.createElement('tr');
-                tr.className = 'bg-white border-b hover:bg-gray-50 animate-fadeInUp';
-                tr.style.animationDelay = `${index * 50}ms`; // 순차적 애니메이션 딜레이
-                tr.innerHTML = `
-                    <td class="px-4 py-4 font-medium text-gray-900">${rankDisplay}</td>
-                    <td class="px-4 py-4 font-bold text-gray-800">${item.name}</td>
-                    <td class="px-4 py-4 text-xs text-gray-400">${item.phone || '-'}</td>
-                    <td class="px-4 py-4 text-right font-bold text-theme-600">${item.count}회</td>`;
-                tbody.appendChild(tr);
-            });
-        }
+        sortedMembers.forEach((item, index) => {
+            const rankDisplay = index === 0 ? `<span class="text-yellow-500 mr-1"><i class="fas fa-crown"></i></span>1` : index + 1;
+            const tr = document.createElement('tr');
+            tr.className = 'bg-white border-b hover:bg-gray-50 animate-fadeInUp';
+            tr.style.animationDelay = `${index * 50}ms`;
+            tr.innerHTML = `
+                <td class="px-4 py-4 font-medium text-gray-900">${rankDisplay}</td>
+                <td class="px-4 py-4 font-bold text-gray-800">${item.name}</td>
+                <td class="px-4 py-4 text-xs text-gray-400">${item.phone || '-'}</td>
+                <td class="px-4 py-4 text-right font-bold text-theme-600">${item.count}회</td>`;
+            tbody.appendChild(tr);
+        });
         table.appendChild(tbody);
         container.appendChild(table);
     };
@@ -1697,6 +1731,12 @@
     const renderReport_ClassWeekly = (logsForMonth) => {
         const container = document.getElementById('report-class-weekly-attendance');
         container.innerHTML = ''; // Clear previous content
+
+        if (logsForMonth.length === 0) {
+            container.innerHTML = getNoDataHtml('해당 월의 출석 데이터가 없습니다.');
+            reportDataCache.classWeekly = [];
+            return;
+        }
 
         const sessionWeeklyCounts = {};
         logsForMonth.forEach(log => {
@@ -1734,46 +1774,41 @@
             </thead>
             <tbody>`;
 
-        if (sortedSessionWeekly.length === 0) {
-            html += '<tr><td colspan="7" class="text-center py-4 text-gray-400">데이터가 없습니다.</td></tr>';
-        } else {
-            sortedSessionWeekly.forEach((item, index) => {
-                const weekCells = [1, 2, 3, 4, 5].map(weekNum => {
-                    const count = item.weeks[weekNum];
-                    return count > 0 
-                        ? `<td class="px-2 py-4 text-center text-gray-500 cursor-pointer underline" onclick="openSessionAttendeesModal('${item.name}', ${weekNum})">${count}</td>` 
-                        : `<td class="px-2 py-4 text-center text-gray-500">-</td>`;
-                }).join('');
+        sortedSessionWeekly.forEach((item, index) => {
+            const weekCells = [1, 2, 3, 4, 5].map(weekNum => {
+                const count = item.weeks[weekNum];
+                return count > 0 
+                    ? `<td class="px-2 py-4 text-center text-gray-500 cursor-pointer underline" onclick="openSessionAttendeesModal('${item.name}', ${weekNum})">${count}</td>` 
+                    : `<td class="px-2 py-4 text-center text-gray-500">-</td>`;
+            }).join('');
 
-                const totalCell = item.total > 0 
-                    ? `<td class="px-2 py-4 text-right font-bold text-blue-600 cursor-pointer underline" onclick="openSessionAttendeesModal('${item.name}', null)">${item.total}</td>` 
-                    : `<td class="px-2 py-4 text-right font-bold text-blue-600">${item.total}</td>`;
+            const totalCell = item.total > 0 
+                ? `<td class="px-2 py-4 text-right font-bold text-blue-600 cursor-pointer underline" onclick="openSessionAttendeesModal('${item.name}', null)">${item.total}</td>` 
+                : `<td class="px-2 py-4 text-right font-bold text-blue-600">${item.total}</td>`;
 
-                let shortName;
-                if (item.name === '미분류') {
-                    shortName = '미분류';
-                } else {
-                    const nameParts = item.name.split(' ');
-                    const dayPart = nameParts[0].charAt(0);
-                    const timePart = nameParts.slice(1).join('');
-                    shortName = dayPart + timePart;
-                }
+            let shortName;
+            if (item.name === '미분류') {
+                shortName = '미분류';
+            } else {
+                const nameParts = item.name.split(' ');
+                const dayPart = nameParts[0].charAt(0);
+                const timePart = nameParts.slice(1).join('');
+                shortName = dayPart + timePart;
+            }
 
-                // [NEW] Add Instructor Name
-                const session = SESSIONS.find(s => s.name === item.name);
-                const instructor = session ? window.instructors[session.code] : null;
-                const instructorHtml = instructor ? `<div class="text-xs text-gray-400 font-normal mt-1">(${instructor} 사범)</div>` : '';
+            const session = SESSIONS.find(s => s.name === item.name);
+            const instructor = session ? window.instructors[session.code] : null;
+            const instructorHtml = instructor ? `<div class="text-xs text-gray-400 font-normal mt-1">(${instructor} 사범)</div>` : '';
 
-                html += `<tr class="bg-white border-b hover:bg-gray-50 animate-fadeInUp" style="animation-delay: ${index * 50}ms">
-                    <td class="px-2 py-4 font-bold text-gray-800 whitespace-nowrap">
-                        ${shortName}
-                        ${instructorHtml}
-                    </td>
-                    ${weekCells}
-                    ${totalCell}
-                </tr>`;
-            });
-        }
+            html += `<tr class="bg-white border-b hover:bg-gray-50 animate-fadeInUp" style="animation-delay: ${index * 50}ms">
+                <td class="px-2 py-4 font-bold text-gray-800 whitespace-nowrap">
+                    ${shortName}
+                    ${instructorHtml}
+                </td>
+                ${weekCells}
+                ${totalCell}
+            </tr>`;
+        });
         html += '</tbody></table>';
         container.innerHTML = html;
     };
@@ -1781,6 +1816,12 @@
     const renderReport_MemberWeekly = (logsForMonth) => {
         const container = document.getElementById('report-member-weekly-attendance');
         container.innerHTML = ''; // Clear previous content
+
+        if (logsForMonth.length === 0) {
+            container.innerHTML = getNoDataHtml('해당 월의 출석 데이터가 없습니다.');
+            reportDataCache.memberWeekly = [];
+            return;
+        }
 
         const individualWeekly = {};
         logsForMonth.forEach(log => {
@@ -1811,21 +1852,17 @@
             </thead>
             <tbody>`;
 
-        if (sortedIndiv.length === 0) {
-            html += '<tr><td colspan="7" class="text-center py-4 text-gray-400">데이터가 없습니다.</td></tr>';
-        } else {
-            sortedIndiv.forEach((item, index) => {
-                html += `<tr class="bg-white border-b hover:bg-gray-50 animate-fadeInUp" style="animation-delay: ${index * 50}ms">
-                    <td class="px-2 py-4 font-bold text-theme-600 cursor-pointer hover:underline whitespace-nowrap" onclick="openHistoryModal('${item.id}')">${item.name}</td>
-                    <td class="px-2 py-4 text-center text-gray-500">${item.weeks[1] || '-'}</td>
-                    <td class="px-2 py-4 text-center text-gray-500">${item.weeks[2] || '-'}</td>
-                    <td class="px-2 py-4 text-center text-gray-500">${item.weeks[3] || '-'}</td>
-                    <td class="px-2 py-4 text-center text-gray-500">${item.weeks[4] || '-'}</td>
-                    <td class="px-2 py-4 text-center text-gray-500">${item.weeks[5] || '-'}</td>
-                    <td class="px-2 py-4 text-right font-bold text-blue-600">${item.total}</td>
-                </tr>`;
-            });
-        }
+        sortedIndiv.forEach((item, index) => {
+            html += `<tr class="bg-white border-b hover:bg-gray-50 animate-fadeInUp" style="animation-delay: ${index * 50}ms">
+                <td class="px-2 py-4 font-bold text-theme-600 cursor-pointer hover:underline whitespace-nowrap" onclick="openHistoryModal('${item.id}')">${item.name}</td>
+                <td class="px-2 py-4 text-center text-gray-500">${item.weeks[1] || '-'}</td>
+                <td class="px-2 py-4 text-center text-gray-500">${item.weeks[2] || '-'}</td>
+                <td class="px-2 py-4 text-center text-gray-500">${item.weeks[3] || '-'}</td>
+                <td class="px-2 py-4 text-center text-gray-500">${item.weeks[4] || '-'}</td>
+                <td class="px-2 py-4 text-center text-gray-500">${item.weeks[5] || '-'}</td>
+                <td class="px-2 py-4 text-right font-bold text-blue-600">${item.total}</td>
+            </tr>`;
+        });
         html += '</tbody></table>';
         container.innerHTML = html;
     };
@@ -1835,8 +1872,9 @@
         const container = document.getElementById('report-class-popularity');
         container.innerHTML = ''; // Clear previous content
 
-        if (!logs || !logs.length) {
-            container.innerHTML = '<p class="text-gray-500 text-center py-4">해당 월의 출석 데이터가 없습니다.</p>';
+        if (!logs || logs.length === 0) {
+            container.innerHTML = getNoDataHtml('해당 월의 출석 데이터가 없습니다.');
+            reportDataCache.classPopularity = [];
             return;
         }
 
@@ -1879,8 +1917,9 @@
         const container = document.getElementById('report-content-weekly-perfect-attendance');
         if (!container) return;
 
-        // 1. Calculate weekly presence for each member
         const memberWeeklyPresence = {};
+        if (!logsForMonth) logsForMonth = [];
+
         logsForMonth.forEach(log => {
             if (!log.memberId || !log.date) return;
             const week = getWeekOfMonth(log.date);
@@ -1894,7 +1933,6 @@
             memberWeeklyPresence[log.memberId].weeks.add(week);
         });
 
-        // 2. Group members by the number of weeks they attended
         const attendanceGroups = { 5: [], 4: [], 3: [], 2: [], 1: [] };
         Object.values(memberWeeklyPresence).forEach(member => {
             const weekCount = member.weeks.size;
@@ -1903,21 +1941,17 @@
             }
         });
 
-        // Sort names alphabetically within each group
         for (const key in attendanceGroups) {
             attendanceGroups[key].sort((a, b) => a.localeCompare(b));
         }
 
-        // 3. Render the report
         const selectedMonth = document.getElementById('report-month-filter').value;
         const [yearStr, monthStr] = selectedMonth.split('-');
         const year = parseInt(yearStr);
         const month = parseInt(monthStr);
         
-        let html = `<div class="card">
-                        <h3 class="font-bold text-lg mb-4">🏅 주간 개근 현황 (${year}년 ${month}월)</h3>`;
+        let html = `<div class="card"><h3 class="font-bold text-lg mb-4">🏅 주간 개근 현황 (${year}년 ${month}월)</h3>`;
 
-        // [FIX] Dynamically generate titles based on the number of weeks in the month
         const getTotalWeeksInMonth = (y, m) => {
             const lastDay = new Date(y, m, 0).getDate();
             const dateStr = `${y}-${String(m).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
@@ -1945,7 +1979,7 @@
 
         const hasData = groupInfo.some(group => attendanceGroups[group.count].length > 0);
         if (!hasData) {
-            html += '<p class="text-center text-gray-500 py-10">해당 월의 출석 데이터가 없습니다.</p>';
+            html += getNoDataHtml('해당 월의 출석 데이터가 없습니다.');
         } else {
             groupInfo.forEach(group => {
                 const members = attendanceGroups[group.count];
@@ -2038,14 +2072,16 @@
         const periodSelector = document.getElementById('inactive-period-selector');
         const days = parseInt(periodSelector.value);
         container.innerHTML = '<p class="text-gray-500 text-center py-4">데이터를 불러오는 중...</p>';
+
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - days);
         const recentLogs = allLogs.filter(log => log.date && new Date(log.date) >= cutoffDate);
         const activeMemberIds = new Set(recentLogs.map(log => log.memberId));
         const inactiveMembers = allMembers.filter(member => !activeMemberIds.has(member.id));
         reportDataCache.inactiveMembers = inactiveMembers;
+
         if (inactiveMembers.length === 0) {
-            container.innerHTML = `<p class="text-gray-500 text-center py-4">최근 ${days}일 동안 미출석한 회원이 없습니다.</p>`;
+            container.innerHTML = getNoDataHtml(`최근 ${days}일 동안 미출석한 회원이 없습니다.`);
             return;
         }
         container.innerHTML = '';
@@ -2133,7 +2169,7 @@
         const yearlyLogs = allLogs.filter(log => log && log.date && log.date.startsWith(String(currentYear)));
         
         if (yearlyLogs.length === 0) {
-            container.innerHTML = `<p class="text-center text-gray-500 py-10">${currentYear}년 데이터가 아직 없습니다.</p>`;
+            container.innerHTML = getNoDataHtml(`${currentYear}년 데이터가 아직 없습니다.`);
             return;
         }
 
@@ -2314,15 +2350,14 @@
             <div class="card">
                 <h3 class="font-bold text-lg mb-4">📊 신규 vs 기존 회원 출석 비교 (${month}월)</h3>
                 <p class="text-sm text-gray-500 mb-6">가입 3개월 이내 회원을 '신규 회원'으로 분류하여 해당 월의 총 출석 횟수를 비교합니다.</p>
-                ${totalAttendance > 0 ? `
-                    <div class="h-64 mb-6">
-                        <canvas id="new-vs-existing-chart"></canvas>
-                    </div>
-                    <div class="text-center space-y-2">
-                        <p class="text-lg"><span class="font-bold text-blue-600">기존 회원:</span> ${existingMemberPercent}% (${existingMemberAttendance}회)</p>
-                        <p class="text-lg"><span class="font-bold text-green-600">신규 회원:</span> ${newMemberPercent}% (${newMemberAttendance}회)</p>
-                    </div>` : getNoDataHtml('해당 월의 출석 데이터가 없습니다.')
-                `}
+                ${totalAttendance > 0 ?
+                    '<div class="h-64 mb-6"><canvas id="new-vs-existing-chart"></canvas></div>' +
+                    '<div class="text-center space-y-2">' +
+                    '<p class="text-lg"><span class="font-bold text-blue-600">기존 회원:</span> ' + existingMemberPercent + '% (' + existingMemberAttendance + '회)</p>' +
+                    '<p class="text-lg"><span class="font-bold text-green-600">신규 회원:</span> ' + newMemberPercent + '% (' + newMemberAttendance + '회)</p>' +
+                    '</div>'
+                    : getNoDataHtml('해당 월의 출석 데이터가 없습니다.')
+                }
             </div>
         `;
 
@@ -2384,7 +2419,7 @@
 
         const cohortMembers = allMembers.filter(m => m.registeredAt && new Date(m.registeredAt).getFullYear() === cohortYear && new Date(m.registeredAt).getMonth() + 1 === cohortMonth);
         if (cohortMembers.length === 0) {
-            resultsContainer.innerHTML = `<p class="text-center text-gray-500 py-10">${cohortMonth}월에 가입한 회원이 없습니다.</p>`;
+            resultsContainer.innerHTML = getNoDataHtml(`${cohortMonth}월에 가입한 회원이 없습니다.`);
             return;
         }
 
@@ -2615,7 +2650,7 @@
                     </div>
                     <div class="flex gap-2">
                         <button onclick="editInstructor('${session.code}', '${window.instructors[session.code] || ''}')" class="text-blue-500 text-sm border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-50" title="수업 사범 이름을 수정합니다.">수정</button>
-                        ${instructorName !== '미지정' ? `<button onclick="deleteInstructor('${session.code}')" class="text-red-400 text-sm border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50" title="이 수업의 사범 지정을 해제합니다.">삭제</button>` : ''}
+                        ${instructorName !== '미지정' ? '<button onclick="deleteInstructor(\'' + session.code + '\')" class="text-red-400 text-sm border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50" title="이 수업의 사범 지정을 해제합니다.">삭제</button>' : ''}
                     </div>
                 </li>
             `;
@@ -3092,8 +3127,8 @@
         document.getElementById('history-member-name').innerText = `${member.name} 님의 출석 이력`;
         const list = document.getElementById('history-list');
         list.innerHTML = ''; // Clear previous content
-        // [FIX] Use String comparison for log filtering
-        const history = logs.filter(l => String(l.memberId) === String(memberId)).sort((a, b) => b.id - a.id);
+        // [FINAL FIX] Add guard for null log entries in filter and use ultra-robust sort
+        const history = logs.filter(l => l && String(l.memberId) === String(memberId)).sort((a, b) => (!a || !b || !a.id || !b.id) ? 0 : String(b.id).localeCompare(String(a.id)));
         
         const pendingStatusHtml = `<span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded ml-2"><i class="fas fa-clock mr-1"></i>대기중</span>`;
 
@@ -3435,7 +3470,7 @@
                     <div class="flex items-center gap-2">
                         <p class="font-bold text-lg ${nameClass} flex items-center" title="이 회원의 상세 출석 이력을 봅니다.">${m.name} <i class="fas fa-chevron-right text-gray-300 text-xs ml-2"></i></p>
                         ${inactiveBadge}
-                        ${regDate ? `<span class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">${regDate} 가입</span>` : ''}
+                        ${regDate ? '<span class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">' + regDate + ' 가입</span>' : ''}
                     </div>
                     <p class="text-sm ${phoneClass}">${m.phone}</p>
                 </div>
@@ -3942,11 +3977,7 @@
     }
     window.setTheme = function(themeName) {
         document.body.dataset.theme = themeName;
-        try {
-            localStorage.setItem('appTheme', themeName);
-        } catch (e) {
-            console.warn("Could not save theme to localStorage:", e);
-        }
+        localStorage.setItem('appTheme', themeName);
         document.querySelector('meta[name="theme-color"]').setAttribute('content', THEMES[themeName]['600']);
         if (currentMode === 'reports') {
             const activeTab = document.querySelector('#report-tabs button.bg-theme-100');
@@ -3958,12 +3989,7 @@
 
     // --- [NEW] Password Confirmation Modal Logic ---
     let passwordResolve = null;
-    window.requestPassword = function() { // [FIX] Wrap in try-catch
-        try {
-            const lockout = JSON.parse(localStorage.getItem('adminLockout') || '{"attempts":0, "until":0}');
-        } catch (e) {
-            console.warn("Could not access lockout state from localStorage:", e);
-        }
+    window.requestPassword = function() {
         const lockout = JSON.parse(localStorage.getItem('adminLockout') || '{"attempts":0, "until":0}');
         const now = Date.now();
         if (now < lockout.until) {
@@ -3983,35 +4009,29 @@
     };
 
     window.handlePasswordConfirm = function() {
-        try {
-            const input = document.getElementById('confirm-pw-input');
-            const pw = input.value.trim();
-            const storedPw = (localStorage.getItem('adminPassword') || '1234').trim();
-            let lockout = JSON.parse(localStorage.getItem('adminLockout') || '{"attempts":0, "until":0}');
+        const input = document.getElementById('confirm-pw-input');
+        const pw = input.value.trim();
+        const storedPw = (localStorage.getItem('adminPassword') || '1234').trim();
+        let lockout = JSON.parse(localStorage.getItem('adminLockout') || '{"attempts":0, "until":0}');
 
-            if (pw === storedPw) {
-                localStorage.setItem('adminLockout', JSON.stringify({attempts: 0, until: 0}));
-                document.getElementById('password-confirm-modal').classList.add('hidden');
-                if (passwordResolve) passwordResolve(true);
+        if (pw === storedPw) {
+            localStorage.setItem('adminLockout', JSON.stringify({attempts: 0, until: 0}));
+            document.getElementById('password-confirm-modal').classList.add('hidden');
+            if (passwordResolve) passwordResolve(true);
+        } else {
+            lockout.attempts++;
+            if (lockout.attempts >= 5) {
+                lockout.until = Date.now() + 60000; // 1분 차단
+                lockout.attempts = 0;
+                localStorage.setItem('adminLockout', JSON.stringify(lockout));
+                showAlert('보안 제한', '비밀번호를 5회 연속 틀렸습니다.\n보안을 위해 1분간 재시도가 제한됩니다.');
+                closePasswordConfirmModal();
             } else {
-                lockout.attempts++;
-                if (lockout.attempts >= 5) {
-                    lockout.until = Date.now() + 60000; // 1분 차단
-                    lockout.attempts = 0;
-                    localStorage.setItem('adminLockout', JSON.stringify(lockout));
-                    showAlert('보안 제한', '비밀번호를 5회 연속 틀렸습니다.\n보안을 위해 1분간 재시도가 제한됩니다.');
-                    closePasswordConfirmModal();
-                } else {
-                    localStorage.setItem('adminLockout', JSON.stringify(lockout));
-                    showAlert('오류', `비밀번호가 틀렸습니다. (틀린 횟수: ${lockout.attempts}/5)`);
-                    input.value = '';
-                    input.focus();
-                }
+                localStorage.setItem('adminLockout', JSON.stringify(lockout));
+                showAlert('오류', `비밀번호가 틀렸습니다. (틀린 횟수: ${lockout.attempts}/5)`);
+                input.value = '';
+                input.focus();
             }
-        } catch (e) {
-            console.error("Password confirmation failed due to storage error:", e);
-            showAlert('오류', '보안 확인 중 저장소 접근에 실패했습니다. 브라우저 설정을 확인해주세요.');
-            closePasswordConfirmModal();
         }
     };
 
@@ -4067,12 +4087,10 @@
         document.getElementById('new-password').value = '';
         document.getElementById('confirm-password').value = '';
 
-        try {
-            // [FIX] 마스터 복구 코드 표시 로직 추가
-            const masterKey = localStorage.getItem('adminMasterKey');
-            const display = document.getElementById('master-key-display');
-            if (display) display.innerText = masterKey || '발급 오류 (새로고침 필요)';
-        } catch (e) { console.warn("Could not get master key from localStorage:", e); }
+        // [FIX] 마스터 복구 코드 표시 로직 추가
+        const masterKey = localStorage.getItem('adminMasterKey');
+        const display = document.getElementById('master-key-display');
+        if (display) display.innerText = masterKey || '발급 오류 (새로고침 필요)';
 
         document.getElementById('password-change-modal').classList.remove('hidden');
     }
@@ -4082,6 +4100,17 @@
     }
 
     window.changePassword = function() {
+        const currentPw = document.getElementById('current-password').value.trim();
+        const newPw = document.getElementById('new-password').value.trim();
+        const confirmPw = document.getElementById('confirm-password').value.trim();
+        const storedPw = (localStorage.getItem('adminPassword') || '1234').trim();
+
+        if (currentPw !== storedPw) return showAlert('오류', '현재 비밀번호가 일치하지 않습니다.');
+        if (newPw.length < 4) return showAlert('오류', '새 비밀번호는 4자 이상이어야 합니다.');
+        if (newPw !== confirmPw) return showAlert('오류', '새 비밀번호 확인이 일치하지 않습니다.');
+
+        localStorage.setItem('adminPassword', newPw);
+        showAlert('완료', '비밀번호가 변경되었습니다.');
         closePasswordChangeModal();
     }
 
@@ -4364,7 +4393,7 @@
                 window.logs = await dbHelper.getAll('logs');
                 window.members = await dbHelper.getAll('members');
                 // Sort logs by ID desc (newest first)
-                window.logs.sort((a, b) => b.id - a.id);
+                window.logs.sort((a, b) => (!a || !b || !a.id || !b.id) ? 0 : String(b.id).localeCompare(String(a.id)));
             } catch (e) { console.error("Failed to reload data:", e); }
         } catch (error) {
             console.error("Test data generation failed:", error);
@@ -4600,7 +4629,7 @@
 
             // 4. Reload data into memory
             window.members = serverMembers.sort((a, b) => a.name.localeCompare(b.name));
-            window.logs = serverLogs.sort((a, b) => (b.id && a.id) ? String(b.id).localeCompare(String(a.id)) : 0);
+            window.logs = serverLogs.sort((a, b) => (!a || !b || !a.id || !b.id) ? 0 : String(b.id).localeCompare(String(a.id)));
             window.instructors = serverInstructors.reduce((acc, curr) => {
                 acc[curr.id] = curr.name;
                 return acc;
@@ -4723,7 +4752,7 @@
                     
                     // 4. Load data into memory directly from fetched data
                     window.members = serverMembers.sort((a, b) => a.name.localeCompare(b.name));
-                    window.logs = serverLogs.sort((a, b) => (b.id && a.id) ? String(b.id).localeCompare(String(a.id)) : 0);
+                    window.logs = serverLogs.sort((a, b) => (!a || !b || !a.id || !b.id) ? 0 : String(b.id).localeCompare(String(a.id)));
                     window.instructors = serverInstructors.reduce((acc, curr) => { acc[curr.id] = curr.name; return acc; }, {});
                     
                     // 5. Update sync time and status
@@ -4736,7 +4765,7 @@
                     if (backup.members && backup.logs && backup.instructors) {
                         // Restore from backup to in-memory state
                         window.members = backup.members.sort((a, b) => a.name.localeCompare(b.name));
-                        window.logs = backup.logs.sort((a, b) => b.id - a.id);
+                        window.logs = backup.logs.sort((a, b) => (!a || !b || !a.id || !b.id) ? 0 : String(b.id).localeCompare(String(a.id)));
                         window.instructors = backup.instructors.reduce((acc, curr) => { acc[curr.sessionCode] = curr.name; return acc; }, {});
                         showAlert('초기 동기화 실패', '서버 데이터 동기화에 실패하여, 기기에 저장된 이전 데이터로 앱을 시작합니다.');
                         showSyncStatus('offline', '로컬 데이터로 실행');
@@ -4765,7 +4794,7 @@
                 }
 
                 window.members = membersData.sort((a, b) => a.name.localeCompare(b.name));
-                window.logs = logsData.sort((a, b) => b.id - a.id);
+                window.logs = logsData.sort((a, b) => (!a || !b || !a.id || !b.id) ? 0 : String(b.id).localeCompare(String(a.id)));
                 window.instructors = instructorsData.reduce((acc, curr) => {
                     acc[curr.sessionCode] = curr.name;
                     return acc;
@@ -4815,7 +4844,6 @@
             }
 
             // DOM이 준비된 후 UI 렌더링
-            renderMembers();
             updateCheckUserSelect();
             updateLastSyncTimeDisplay();
         } catch (error) {
