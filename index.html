@@ -3407,22 +3407,39 @@
         } else {
             countSpan.innerText = `(총 ${totalCount}명)`;
         }
-        
+
+        // [NEW] Inactivity Logic
+        const INACTIVE_DAYS = 60;
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - INACTIVE_DAYS);
+
+        const activeMemberIds = new Set(
+            window.logs
+                .filter(log => log.date && new Date(log.date) >= cutoffDate)
+                .map(log => String(log.memberId)) // Ensure IDs are strings for consistent matching
+        );
+
         if (filteredMembers.length === 0) {
             list.innerHTML = `<li class="text-center text-gray-400 py-8">${trimmedQuery ? '검색 결과가 없습니다.' : '등록된 회원이 없습니다.'}</li>`;
             return;
         }
 
         list.innerHTML = '';
-        filteredMembers.forEach(m => {
+        filteredMembers.forEach((m, index) => {
             const regDate = m.registeredAt ? new Date(m.registeredAt).toLocaleDateString() : '';
-            list.innerHTML += `<li class="py-4 flex justify-between items-center">
+            const isActive = activeMemberIds.has(String(m.id));
+            const nameClass = isActive ? 'text-gray-800' : 'text-gray-400';
+            const phoneClass = isActive ? 'text-gray-400' : 'text-gray-300';
+            const inactiveBadge = !isActive ? `<span class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded" title="최근 ${INACTIVE_DAYS}일간 미출석">비활성</span>` : '';
+
+            list.innerHTML += `<li class="py-4 flex justify-between items-center animate-fadeInUp" style="animation-delay: ${index * 30}ms">
                 <div onclick="openHistoryModal('${m.id}')" class="cursor-pointer flex-1 hover:bg-theme-50 p-2 rounded transition">
                     <div class="flex items-center gap-2">
-                        <p class="font-bold text-lg text-gray-800 flex items-center" title="이 회원의 상세 출석 이력을 봅니다.">${m.name} <i class="fas fa-chevron-right text-gray-300 text-xs ml-2"></i></p>
+                        <p class="font-bold text-lg ${nameClass} flex items-center" title="이 회원의 상세 출석 이력을 봅니다.">${m.name} <i class="fas fa-chevron-right text-gray-300 text-xs ml-2"></i></p>
+                        ${inactiveBadge}
                         ${regDate ? `<span class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">${regDate} 가입</span>` : ''}
                     </div>
-                    <p class="text-sm text-gray-400">${m.phone}</p>
+                    <p class="text-sm ${phoneClass}">${m.phone}</p>
                 </div>
                 <div class="flex gap-2 ml-2 flex-shrink-0">
                     <button onclick="openMemberEditModal('${m.id}')" class="text-blue-500 text-sm border border-blue-200 px-3 py-2 rounded-lg hover:bg-blue-50" title="회원 정보를 수정합니다.">수정</button>
