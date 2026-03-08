@@ -3409,7 +3409,7 @@
             }
 
             window.members.push(newMemberData);
-            window.members.sort((a, b) => a.name.localeCompare(b.name));
+            window.members.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
             document.getElementById('new-member-name').value = ''; document.getElementById('new-member-phone').value = '';
             showAlert('완료', `${name} 회원이 등록되었습니다.`);
@@ -4629,10 +4629,10 @@
             ]);
 
             // 4. Reload data into memory
-            window.members = serverMembers.sort((a, b) => a.name.localeCompare(b.name));
+            window.members = serverMembers.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
             window.logs = serverLogs.sort((a, b) => (!a || !b || !a.id || !b.id) ? 0 : String(b.id).localeCompare(String(a.id)));
             window.instructors = serverInstructors.reduce((acc, curr) => {
-                acc[curr.id] = curr.name;
+                if (curr && curr.id) acc[curr.id] = curr.name;
                 return acc;
             }, {});
 
@@ -4752,9 +4752,9 @@
                     ]);
                     
                     // 4. Load data into memory directly from fetched data
-                    window.members = serverMembers.sort((a, b) => a.name.localeCompare(b.name));
+                    window.members = serverMembers.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
                     window.logs = serverLogs.sort((a, b) => (!a || !b || !a.id || !b.id) ? 0 : String(b.id).localeCompare(String(a.id)));
-                    window.instructors = serverInstructors.reduce((acc, curr) => { acc[curr.id] = curr.name; return acc; }, {});
+                    window.instructors = serverInstructors.reduce((acc, curr) => { if (curr && curr.id) acc[curr.id] = curr.name; return acc; }, {});
                     
                     // 5. Update sync time and status
                     localStorage.setItem('lastSyncTime', new Date().toISOString());
@@ -4765,9 +4765,9 @@
 
                     if (backup.members && backup.logs && backup.instructors) {
                         // Restore from backup to in-memory state
-                        window.members = backup.members.sort((a, b) => a.name.localeCompare(b.name));
+                        window.members = backup.members.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
                         window.logs = backup.logs.sort((a, b) => (!a || !b || !a.id || !b.id) ? 0 : String(b.id).localeCompare(String(a.id)));
-                        window.instructors = backup.instructors.reduce((acc, curr) => { acc[curr.sessionCode] = curr.name; return acc; }, {});
+                        window.instructors = backup.instructors.reduce((acc, curr) => { if (curr && curr.sessionCode) acc[curr.sessionCode] = curr.name; return acc; }, {});
                         showAlert('초기 동기화 실패', '서버 데이터 동기화에 실패하여, 기기에 저장된 이전 데이터로 앱을 시작합니다.');
                         showSyncStatus('offline', '로컬 데이터로 실행');
                     } else {
@@ -4794,10 +4794,10 @@
                     );
                 }
 
-                window.members = membersData.sort((a, b) => a.name.localeCompare(b.name));
+                window.members = membersData.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
                 window.logs = logsData.sort((a, b) => (!a || !b || !a.id || !b.id) ? 0 : String(b.id).localeCompare(String(a.id)));
                 window.instructors = instructorsData.reduce((acc, curr) => {
-                    acc[curr.sessionCode] = curr.name;
+                    if (curr && curr.sessionCode) acc[curr.sessionCode] = curr.name;
                     return acc;
                 }, {});
             }
