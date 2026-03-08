@@ -1073,6 +1073,27 @@
     // Register ChartDataLabels plugin globally
     Chart.register(ChartDataLabels);
 
+    // [NEW] Plugin to display text when chart has no data
+    const noDataPlugin = {
+        id: 'noData',
+        afterDraw: (chart) => {
+            // Check if all datasets are empty or all data points are zero/null/undefined
+            const hasData = chart.data.datasets.length > 0 && chart.data.datasets.some(ds => ds.data.some(d => d !== 0 && d !== null && d !== undefined));
+            if (!hasData) {
+                const { ctx, chartArea: { left, top, width, height } } = chart;
+                ctx.save();
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = "bold 16px 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif";
+                ctx.fillStyle = '#9ca3af'; // text-gray-400
+                ctx.fillText('표시할 데이터가 없습니다.', left + width / 2, top + height / 2);
+                ctx.restore();
+            }
+        }
+    };
+    Chart.register(noDataPlugin);
+
+
     window.DAYS = ["일", "월", "화", "수", "목", "금", "토"];
     const DAYS = window.DAYS;
 
@@ -1190,6 +1211,18 @@
     window.submitCustomPrompt = function() {
         const value = document.getElementById('custom-prompt-input').value;
         closeCustomPrompt(value);
+    }
+
+    // [NEW] Helper function to generate 'no data' placeholder HTML
+    function getNoDataHtml(message, subMessage = '') {
+        const subMessageHtml = subMessage ? `<p class="text-sm mt-2">${subMessage}</p>` : '';
+        return `
+            <div class="text-center py-16 text-gray-400 bg-gray-50 rounded-lg border border-gray-200">
+                <i class="fas fa-info-circle text-4xl mb-4 text-gray-300"></i>
+                <p class="font-bold text-lg text-gray-500">${message}</p>
+                ${subMessageHtml}
+            </div>
+        `;
     }
 
     // [NEW] Function to show the undo toast
@@ -1647,6 +1680,12 @@
     const renderReport_MemberRank = (logsForMonth) => {
         const container = document.getElementById('report-member-ranking');
         container.innerHTML = ''; // 이전 내용 초기화
+
+        if (logsForMonth.length === 0) {
+            container.innerHTML = getNoDataHtml('해당 월의 출석 데이터가 없습니다.');
+            reportDataCache.memberRank = [];
+            return;
+        }
         
         const table = document.createElement('table');
         table.className = 'w-full text-sm text-left text-gray-500';
@@ -1672,24 +1711,18 @@
         const sortedMembers = Object.values(memberCounts).sort((a, b) => b.count - a.count);
         reportDataCache.memberRank = sortedMembers;
 
-        if (sortedMembers.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-gray-400">데이터가 없습니다.</td></tr>';
-        } else {
-            sortedMembers.forEach((item, index) => {
-                // [NEW] Add Crown for 1st place
-                const rankDisplay = index === 0 ? `<span class="text-yellow-500 mr-1"><i class="fas fa-crown"></i></span>1` : index + 1;
-
-                const tr = document.createElement('tr');
-                tr.className = 'bg-white border-b hover:bg-gray-50 animate-fadeInUp';
-                tr.style.animationDelay = `${index * 50}ms`; // 순차적 애니메이션 딜레이
-                tr.innerHTML = `
-                    <td class="px-4 py-4 font-medium text-gray-900">${rankDisplay}</td>
-                    <td class="px-4 py-4 font-bold text-gray-800">${item.name}</td>
-                    <td class="px-4 py-4 text-xs text-gray-400">${item.phone || '-'}</td>
-                    <td class="px-4 py-4 text-right font-bold text-theme-600">${item.count}회</td>`;
-                tbody.appendChild(tr);
-            });
-        }
+        sortedMembers.forEach((item, index) => {
+            const rankDisplay = index === 0 ? `<span class="text-yellow-500 mr-1"><i class="fas fa-crown"></i></span>1` : index + 1;
+            const tr = document.createElement('tr');
+            tr.className = 'bg-white border-b hover:bg-gray-50 animate-fadeInUp';
+            tr.style.animationDelay = `${index * 50}ms`;
+            tr.innerHTML = `
+                <td class="px-4 py-4 font-medium text-gray-900">${rankDisplay}</td>
+                <td class="px-4 py-4 font-bold text-gray-800">${item.name}</td>
+                <td class="px-4 py-4 text-xs text-gray-400">${item.phone || '-'}</td>
+                <td class="px-4 py-4 text-right font-bold text-theme-600">${item.count}회</td>`;
+            tbody.appendChild(tr);
+        });
         table.appendChild(tbody);
         container.appendChild(table);
     };
@@ -1697,6 +1730,12 @@
     const renderReport_ClassWeekly = (logsForMonth) => {
         const container = document.getElementById('report-class-weekly-attendance');
         container.innerHTML = ''; // Clear previous content
+
+        if (logsForMonth.length === 0) {
+            container.innerHTML = getNoDataHtml('해당 월의 출석 데이터가 없습니다.');
+            reportDataCache.classWeekly = [];
+            return;
+        }
 
         const sessionWeeklyCounts = {};
         logsForMonth.forEach(log => {
@@ -1734,46 +1773,41 @@
             </thead>
             <tbody>`;
 
-        if (sortedSessionWeekly.length === 0) {
-            html += '<tr><td colspan="7" class="text-center py-4 text-gray-400">데이터가 없습니다.</td></tr>';
-        } else {
-            sortedSessionWeekly.forEach((item, index) => {
-                const weekCells = [1, 2, 3, 4, 5].map(weekNum => {
-                    const count = item.weeks[weekNum];
-                    return count > 0 
-                        ? `<td class="px-2 py-4 text-center text-gray-500 cursor-pointer underline" onclick="openSessionAttendeesModal('${item.name}', ${weekNum})">${count}</td>` 
-                        : `<td class="px-2 py-4 text-center text-gray-500">-</td>`;
-                }).join('');
+        sortedSessionWeekly.forEach((item, index) => {
+            const weekCells = [1, 2, 3, 4, 5].map(weekNum => {
+                const count = item.weeks[weekNum];
+                return count > 0 
+                    ? `<td class="px-2 py-4 text-center text-gray-500 cursor-pointer underline" onclick="openSessionAttendeesModal('${item.name}', ${weekNum})">${count}</td>` 
+                    : `<td class="px-2 py-4 text-center text-gray-500">-</td>`;
+            }).join('');
 
-                const totalCell = item.total > 0 
-                    ? `<td class="px-2 py-4 text-right font-bold text-blue-600 cursor-pointer underline" onclick="openSessionAttendeesModal('${item.name}', null)">${item.total}</td>` 
-                    : `<td class="px-2 py-4 text-right font-bold text-blue-600">${item.total}</td>`;
+            const totalCell = item.total > 0 
+                ? `<td class="px-2 py-4 text-right font-bold text-blue-600 cursor-pointer underline" onclick="openSessionAttendeesModal('${item.name}', null)">${item.total}</td>` 
+                : `<td class="px-2 py-4 text-right font-bold text-blue-600">${item.total}</td>`;
 
-                let shortName;
-                if (item.name === '미분류') {
-                    shortName = '미분류';
-                } else {
-                    const nameParts = item.name.split(' ');
-                    const dayPart = nameParts[0].charAt(0);
-                    const timePart = nameParts.slice(1).join('');
-                    shortName = dayPart + timePart;
-                }
+            let shortName;
+            if (item.name === '미분류') {
+                shortName = '미분류';
+            } else {
+                const nameParts = item.name.split(' ');
+                const dayPart = nameParts[0].charAt(0);
+                const timePart = nameParts.slice(1).join('');
+                shortName = dayPart + timePart;
+            }
 
-                // [NEW] Add Instructor Name
-                const session = SESSIONS.find(s => s.name === item.name);
-                const instructor = session ? window.instructors[session.code] : null;
-                const instructorHtml = instructor ? `<div class="text-xs text-gray-400 font-normal mt-1">(${instructor} 사범)</div>` : '';
+            const session = SESSIONS.find(s => s.name === item.name);
+            const instructor = session ? window.instructors[session.code] : null;
+            const instructorHtml = instructor ? `<div class="text-xs text-gray-400 font-normal mt-1">(${instructor} 사범)</div>` : '';
 
-                html += `<tr class="bg-white border-b hover:bg-gray-50 animate-fadeInUp" style="animation-delay: ${index * 50}ms">
-                    <td class="px-2 py-4 font-bold text-gray-800 whitespace-nowrap">
-                        ${shortName}
-                        ${instructorHtml}
-                    </td>
-                    ${weekCells}
-                    ${totalCell}
-                </tr>`;
-            });
-        }
+            html += `<tr class="bg-white border-b hover:bg-gray-50 animate-fadeInUp" style="animation-delay: ${index * 50}ms">
+                <td class="px-2 py-4 font-bold text-gray-800 whitespace-nowrap">
+                    ${shortName}
+                    ${instructorHtml}
+                </td>
+                ${weekCells}
+                ${totalCell}
+            </tr>`;
+        });
         html += '</tbody></table>';
         container.innerHTML = html;
     };
@@ -1781,6 +1815,12 @@
     const renderReport_MemberWeekly = (logsForMonth) => {
         const container = document.getElementById('report-member-weekly-attendance');
         container.innerHTML = ''; // Clear previous content
+
+        if (logsForMonth.length === 0) {
+            container.innerHTML = getNoDataHtml('해당 월의 출석 데이터가 없습니다.');
+            reportDataCache.memberWeekly = [];
+            return;
+        }
 
         const individualWeekly = {};
         logsForMonth.forEach(log => {
@@ -1811,21 +1851,17 @@
             </thead>
             <tbody>`;
 
-        if (sortedIndiv.length === 0) {
-            html += '<tr><td colspan="7" class="text-center py-4 text-gray-400">데이터가 없습니다.</td></tr>';
-        } else {
-            sortedIndiv.forEach((item, index) => {
-                html += `<tr class="bg-white border-b hover:bg-gray-50 animate-fadeInUp" style="animation-delay: ${index * 50}ms">
-                    <td class="px-2 py-4 font-bold text-theme-600 cursor-pointer hover:underline whitespace-nowrap" onclick="openHistoryModal('${item.id}')">${item.name}</td>
-                    <td class="px-2 py-4 text-center text-gray-500">${item.weeks[1] || '-'}</td>
-                    <td class="px-2 py-4 text-center text-gray-500">${item.weeks[2] || '-'}</td>
-                    <td class="px-2 py-4 text-center text-gray-500">${item.weeks[3] || '-'}</td>
-                    <td class="px-2 py-4 text-center text-gray-500">${item.weeks[4] || '-'}</td>
-                    <td class="px-2 py-4 text-center text-gray-500">${item.weeks[5] || '-'}</td>
-                    <td class="px-2 py-4 text-right font-bold text-blue-600">${item.total}</td>
-                </tr>`;
-            });
-        }
+        sortedIndiv.forEach((item, index) => {
+            html += `<tr class="bg-white border-b hover:bg-gray-50 animate-fadeInUp" style="animation-delay: ${index * 50}ms">
+                <td class="px-2 py-4 font-bold text-theme-600 cursor-pointer hover:underline whitespace-nowrap" onclick="openHistoryModal('${item.id}')">${item.name}</td>
+                <td class="px-2 py-4 text-center text-gray-500">${item.weeks[1] || '-'}</td>
+                <td class="px-2 py-4 text-center text-gray-500">${item.weeks[2] || '-'}</td>
+                <td class="px-2 py-4 text-center text-gray-500">${item.weeks[3] || '-'}</td>
+                <td class="px-2 py-4 text-center text-gray-500">${item.weeks[4] || '-'}</td>
+                <td class="px-2 py-4 text-center text-gray-500">${item.weeks[5] || '-'}</td>
+                <td class="px-2 py-4 text-right font-bold text-blue-600">${item.total}</td>
+            </tr>`;
+        });
         html += '</tbody></table>';
         container.innerHTML = html;
     };
@@ -1835,8 +1871,9 @@
         const container = document.getElementById('report-class-popularity');
         container.innerHTML = ''; // Clear previous content
 
-        if (!logs || !logs.length) {
-            container.innerHTML = '<p class="text-gray-500 text-center py-4">해당 월의 출석 데이터가 없습니다.</p>';
+        if (!logs || logs.length === 0) {
+            container.innerHTML = getNoDataHtml('해당 월의 출석 데이터가 없습니다.');
+            reportDataCache.classPopularity = [];
             return;
         }
 
@@ -1879,8 +1916,9 @@
         const container = document.getElementById('report-content-weekly-perfect-attendance');
         if (!container) return;
 
-        // 1. Calculate weekly presence for each member
         const memberWeeklyPresence = {};
+        if (!logsForMonth) logsForMonth = [];
+
         logsForMonth.forEach(log => {
             if (!log.memberId || !log.date) return;
             const week = getWeekOfMonth(log.date);
@@ -1894,7 +1932,6 @@
             memberWeeklyPresence[log.memberId].weeks.add(week);
         });
 
-        // 2. Group members by the number of weeks they attended
         const attendanceGroups = { 5: [], 4: [], 3: [], 2: [], 1: [] };
         Object.values(memberWeeklyPresence).forEach(member => {
             const weekCount = member.weeks.size;
@@ -1903,21 +1940,17 @@
             }
         });
 
-        // Sort names alphabetically within each group
         for (const key in attendanceGroups) {
             attendanceGroups[key].sort((a, b) => a.localeCompare(b));
         }
 
-        // 3. Render the report
         const selectedMonth = document.getElementById('report-month-filter').value;
         const [yearStr, monthStr] = selectedMonth.split('-');
         const year = parseInt(yearStr);
         const month = parseInt(monthStr);
         
-        let html = `<div class="card">
-                        <h3 class="font-bold text-lg mb-4">🏅 주간 개근 현황 (${year}년 ${month}월)</h3>`;
+        let html = `<div class="card"><h3 class="font-bold text-lg mb-4">🏅 주간 개근 현황 (${year}년 ${month}월)</h3>`;
 
-        // [FIX] Dynamically generate titles based on the number of weeks in the month
         const getTotalWeeksInMonth = (y, m) => {
             const lastDay = new Date(y, m, 0).getDate();
             const dateStr = `${y}-${String(m).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
@@ -1945,7 +1978,7 @@
 
         const hasData = groupInfo.some(group => attendanceGroups[group.count].length > 0);
         if (!hasData) {
-            html += '<p class="text-center text-gray-500 py-10">해당 월의 출석 데이터가 없습니다.</p>';
+            html += getNoDataHtml('해당 월의 출석 데이터가 없습니다.');
         } else {
             groupInfo.forEach(group => {
                 const members = attendanceGroups[group.count];
@@ -2038,14 +2071,16 @@
         const periodSelector = document.getElementById('inactive-period-selector');
         const days = parseInt(periodSelector.value);
         container.innerHTML = '<p class="text-gray-500 text-center py-4">데이터를 불러오는 중...</p>';
+
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - days);
         const recentLogs = allLogs.filter(log => log.date && new Date(log.date) >= cutoffDate);
         const activeMemberIds = new Set(recentLogs.map(log => log.memberId));
         const inactiveMembers = allMembers.filter(member => !activeMemberIds.has(member.id));
         reportDataCache.inactiveMembers = inactiveMembers;
+
         if (inactiveMembers.length === 0) {
-            container.innerHTML = `<p class="text-gray-500 text-center py-4">최근 ${days}일 동안 미출석한 회원이 없습니다.</p>`;
+            container.innerHTML = getNoDataHtml(`최근 ${days}일 동안 미출석한 회원이 없습니다.`);
             return;
         }
         container.innerHTML = '';
@@ -2133,7 +2168,7 @@
         const yearlyLogs = allLogs.filter(log => log && log.date && log.date.startsWith(String(currentYear)));
         
         if (yearlyLogs.length === 0) {
-            container.innerHTML = `<p class="text-center text-gray-500 py-10">${currentYear}년 데이터가 아직 없습니다.</p>`;
+            container.innerHTML = getNoDataHtml(`${currentYear}년 데이터가 아직 없습니다.`);
             return;
         }
 
@@ -2321,9 +2356,7 @@
                     <div class="text-center space-y-2">
                         <p class="text-lg"><span class="font-bold text-blue-600">기존 회원:</span> ${existingMemberPercent}% (${existingMemberAttendance}회)</p>
                         <p class="text-lg"><span class="font-bold text-green-600">신규 회원:</span> ${newMemberPercent}% (${newMemberAttendance}회)</p>
-                    </div>
-                ` : `
-                    <p class="text-center text-gray-500 py-10">해당 월의 출석 데이터가 없습니다.</p>
+                    </div>` : getNoDataHtml('해당 월의 출석 데이터가 없습니다.')
                 `}
             </div>
         `;
@@ -2386,7 +2419,7 @@
 
         const cohortMembers = allMembers.filter(m => m.registeredAt && new Date(m.registeredAt).getFullYear() === cohortYear && new Date(m.registeredAt).getMonth() + 1 === cohortMonth);
         if (cohortMembers.length === 0) {
-            resultsContainer.innerHTML = `<p class="text-center text-gray-500 py-10">${cohortMonth}월에 가입한 회원이 없습니다.</p>`;
+            resultsContainer.innerHTML = getNoDataHtml(`${cohortMonth}월에 가입한 회원이 없습니다.`);
             return;
         }
 
