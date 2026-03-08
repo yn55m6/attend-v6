@@ -4624,11 +4624,11 @@
                     showSyncStatus('online', '복원 완료');
                 } catch (rollbackError) {
                     console.error("ROLLBACK FAILED:", rollbackError);
-                    showAlert("치명적 오류", "데이터 동기화 실패 후 복원에도 실패했습니다. 데이터가 손상되었을 수 있으니 백업 파일에서 복구해주세요.");
+                    showAlert("치명적 오류", "데이터 동기화와 자동 복원 모두 실패했습니다.\n\n데이터가 손상되었을 수 있으니, 관리자는 '설정 > 데이터 관리' 메뉴에서 백업 파일로 데이터를 복구해주세요.");
                     showSyncStatus('offline', '복원 실패');
                 }
             } else {
-                showAlert("동기화 실패", "서버와 데이터를 동기화하는 데 실패했습니다. 백업 데이터가 없어 복원할 수 없습니다.");
+                showAlert("동기화 실패", "동기화에 실패했습니다. 자동 복원을 위한 임시 데이터가 없어 복원할 수 없습니다.\n\n관리자는 '설정 > 데이터 관리' 메뉴에서 백업 파일로 데이터를 복구하거나, 인터넷 연결을 확인 후 다시 시도해주세요.");
                 showSyncStatus('online');
             }
         }
@@ -4720,7 +4720,8 @@
                         showAlert('초기 동기화 실패', '서버 데이터 동기화에 실패하여, 기기에 저장된 이전 데이터로 앱을 시작합니다.');
                         showSyncStatus('offline', '로컬 데이터로 실행');
                     } else {
-                        throw new Error("Sync failed and no local backup was available.");
+                        showAlert('초기화 실패', '초기 동기화에 실패했으며 기기에 복원할 데이터도 없습니다.\n\n인터넷 연결을 확인하고 앱을 새로고침하거나, 관리자 모드로 진입하여 백업 파일에서 데이터를 복구해주세요.');
+                        // Continue with empty data, allowing user to access admin functions.
                     }
                 }
 
