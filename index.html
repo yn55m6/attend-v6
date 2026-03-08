@@ -4526,7 +4526,23 @@
         }
 
         showSyncStatus('syncing', '동기화 준비 중...');
+        
+        // [NEW] Backup local data before attempting sync for rollback
+        let backup = {
+            members: null, logs: null, instructors: null,
+            inMemory: {
+                members: [...window.members],
+                logs: [...window.logs],
+                instructors: {...window.instructors}
+            }
+        };
+
         try {
+            // Backup from IndexedDB for robust rollback
+            [backup.members, backup.logs, backup.instructors] = await Promise.all([
+                dbHelper.getAll('members'), dbHelper.getAll('logs'), dbHelper.getAll('instructors')
+            ]);
+
             // 1. Sync any pending local data to server FIRST to avoid data loss
             await syncPendingData();
 
@@ -4586,8 +4602,35 @@
 
         } catch (error) {
             console.error("Manual sync failed:", error);
-            showAlert("동기화 실패", "서버와 데이터를 동기화하는 데 실패했습니다.");
-            showSyncStatus('online');
+            showSyncStatus('syncing', '오류 발생! 데이터 롤백 중...');
+
+            // [NEW] Rollback logic
+            if (backup.members && backup.logs && backup.instructors) {
+                try {
+                    // Restore from backup
+                    await Promise.all([ dbHelper.clear('members'), dbHelper.clear('logs'), dbHelper.clear('instructors') ]);
+                    await Promise.all([
+                        dbHelper.bulkPut('members', backup.members),
+                        dbHelper.bulkPut('logs', backup.logs),
+                        dbHelper.bulkPut('instructors', backup.instructors)
+                    ]);
+
+                    // Restore in-memory state
+                    window.members = backup.inMemory.members;
+                    window.logs = backup.inMemory.logs;
+                    window.instructors = backup.inMemory.instructors;
+
+                    showAlert("동기화 실패", "서버와 데이터를 동기화하는 데 실패하여 이전 데이터로 복원했습니다.");
+                    showSyncStatus('online', '복원 완료');
+                } catch (rollbackError) {
+                    console.error("ROLLBACK FAILED:", rollbackError);
+                    showAlert("치명적 오류", "데이터 동기화 실패 후 복원에도 실패했습니다. 데이터가 손상되었을 수 있으니 백업 파일에서 복구해주세요.");
+                    showSyncStatus('offline', '복원 실패');
+                }
+            } else {
+                showAlert("동기화 실패", "서버와 데이터를 동기화하는 데 실패했습니다. 백업 데이터가 없어 복원할 수 없습니다.");
+                showSyncStatus('online');
+            }
         }
     }
 
@@ -4624,48 +4667,79 @@
             await dbHelper.initDB();
 
             if (navigator.onLine && firebaseHelper.initFirebase()) {
-                // Online: Fetch from Firebase, update local, then listen
-                console.log("Online mode: Initializing with Firebase data.");
-                // [FIX] Sync pending data BEFORE fetching from server
-                await syncPendingData();
+                // [REFACTORED] Online: Perform a full sync, same as manual sync.
+                console.log("Online mode: Initializing with full sync from Firebase.");
+                let backup = { members: null, logs: null, instructors: null };
 
-                showSyncStatus('syncing', '서버와 동기화 중...');
-                const [membersSnapshot, logsSnapshot, instructorsSnapshot] = await Promise.all([
-                    firebaseHelper.getCollection('members').get(),
-                    firebaseHelper.getCollection('logs').get(),
-                    firebaseHelper.getCollection('instructors').get()
-                ]);
+                try {
+                    // Backup from IndexedDB for robust rollback
+                    [backup.members, backup.logs, backup.instructors] = await Promise.all([
+                        dbHelper.getAll('members'), dbHelper.getAll('logs'), dbHelper.getAll('instructors')
+                    ]);
 
-                const membersData = membersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                const logsData = logsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                const instructorsData = instructorsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    // 1. Sync pending local data to server first
+                    await syncPendingData();
 
-                await Promise.all([
-                    dbHelper.bulkPut('members', membersData),
-                    dbHelper.bulkPut('logs', logsData),
-                    dbHelper.bulkPut('instructors', instructorsData.map(d => ({sessionCode: d.id, name: d.name})))
-                ]);
-                
-                // listenForRealtimeUpdates(); // [REMOVED] Disabled to reduce Firebase read costs.
-                showSyncStatus('online');
+                    // 2. Fetch all data from Firebase
+                    showSyncStatus('syncing', '서버와 동기화 중...');
+                    const [membersSnapshot, logsSnapshot, instructorsSnapshot] = await Promise.all([
+                        firebaseHelper.getCollection('members').get(),
+                        firebaseHelper.getCollection('logs').get(),
+                        firebaseHelper.getCollection('instructors').get()
+                    ]);
+
+                    const serverMembers = membersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    const serverLogs = logsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    const serverInstructors = instructorsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                    // 3. Clear local DB and overwrite with server data
+                    await Promise.all([ dbHelper.clear('members'), dbHelper.clear('logs'), dbHelper.clear('instructors') ]);
+                    await Promise.all([
+                        dbHelper.bulkPut('members', serverMembers),
+                        dbHelper.bulkPut('logs', serverLogs),
+                        dbHelper.bulkPut('instructors', serverInstructors.map(d => ({sessionCode: d.id, name: d.name})))
+                    ]);
+                    
+                    // 4. Load data into memory directly from fetched data
+                    window.members = serverMembers.sort((a, b) => a.name.localeCompare(b.name));
+                    window.logs = serverLogs.sort((a, b) => (b.id && a.id) ? String(b.id).localeCompare(String(a.id)) : 0);
+                    window.instructors = serverInstructors.reduce((acc, curr) => { acc[curr.id] = curr.name; return acc; }, {});
+                    
+                    // 5. Update sync time and status
+                    localStorage.setItem('lastSyncTime', new Date().toISOString());
+                    showSyncStatus('online');
+                } catch (syncError) {
+                    console.error("Initial sync failed, attempting to load from local backup.", syncError);
+                    showSyncStatus('syncing', '동기화 실패, 로컬 데이터로 복구 중...');
+
+                    if (backup.members && backup.logs && backup.instructors) {
+                        // Restore from backup to in-memory state
+                        window.members = backup.members.sort((a, b) => a.name.localeCompare(b.name));
+                        window.logs = backup.logs.sort((a, b) => b.id - a.id);
+                        window.instructors = backup.instructors.reduce((acc, curr) => { acc[curr.sessionCode] = curr.name; return acc; }, {});
+                        showAlert('초기 동기화 실패', '서버 데이터 동기화에 실패하여, 기기에 저장된 이전 데이터로 앱을 시작합니다.');
+                        showSyncStatus('offline', '로컬 데이터로 실행');
+                    } else {
+                        throw new Error("Sync failed and no local backup was available.");
+                    }
+                }
+
             } else {
-                // Offline: Just show offline status
+                // Offline: Load data from local IndexedDB
                 console.log("Offline mode: App will run with local data.");
                 showSyncStatus('offline');
+                const [membersData, logsData, instructorsData] = await Promise.all([
+                    dbHelper.getAll('members'),
+                    dbHelper.getAll('logs'),
+                    dbHelper.getAll('instructors')
+                ]);
+                window.members = membersData.sort((a, b) => a.name.localeCompare(b.name));
+                window.logs = logsData.sort((a, b) => b.id - a.id);
+                window.instructors = instructorsData.reduce((acc, curr) => {
+                    acc[curr.sessionCode] = curr.name;
+                    return acc;
+                }, {});
             }
-
-            // Load data from IndexedDB (now the single source of truth for the UI)
-            const [membersData, logsData, instructorsData] = await Promise.all([
-                dbHelper.getAll('members'),
-                dbHelper.getAll('logs'),
-                dbHelper.getAll('instructors')
-            ]);
-            window.members = membersData.sort((a, b) => a.name.localeCompare(b.name));
-            window.logs = logsData.sort((a, b) => b.id - a.id);
-            window.instructors = instructorsData.reduce((acc, curr) => {
-                acc[curr.sessionCode] = curr.name;
-                return acc;
-            }, {});
             
             // [NEW] QR Code Handling
             const urlParams = new URLSearchParams(window.location.search);
