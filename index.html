@@ -4394,7 +4394,7 @@
                 window.logs = await dbHelper.getAll('logs');
                 window.members = await dbHelper.getAll('members');
                 // Sort logs by ID desc (newest first)
-                window.logs.sort((a, b) => b.id - a.id);
+                window.logs.sort((a, b) => (b.id && a.id) ? String(b.id).localeCompare(String(a.id)) : 0);
             } catch (e) { console.error("Failed to reload data:", e); }
         } catch (error) {
             console.error("Test data generation failed:", error);
