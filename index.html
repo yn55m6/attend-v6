@@ -3128,8 +3128,8 @@
         document.getElementById('history-member-name').innerText = `${member.name} 님의 출석 이력`;
         const list = document.getElementById('history-list');
         list.innerHTML = ''; // Clear previous content
-        // [FIX] Use String comparison for log filtering and robust sorting for descending order
-        const history = logs.filter(l => String(l.memberId) === String(memberId)).sort((a, b) => (b.id && a.id) ? String(b.id).localeCompare(String(a.id)) : 0);
+        // [FINAL FIX] Add guard for null log entries in filter and use ultra-robust sort
+        const history = logs.filter(l => l && String(l.memberId) === String(memberId)).sort((a, b) => (!a || !b || !a.id || !b.id) ? 0 : String(b.id).localeCompare(String(a.id)));
         
         const pendingStatusHtml = `<span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded ml-2"><i class="fas fa-clock mr-1"></i>대기중</span>`;
 
@@ -4394,7 +4394,7 @@
                 window.logs = await dbHelper.getAll('logs');
                 window.members = await dbHelper.getAll('members');
                 // Sort logs by ID desc (newest first)
-                window.logs.sort((a, b) => (b.id && a.id) ? String(b.id).localeCompare(String(a.id)) : 0);
+                window.logs.sort((a, b) => (!a || !b || !a.id || !b.id) ? 0 : String(b.id).localeCompare(String(a.id)));
             } catch (e) { console.error("Failed to reload data:", e); }
         } catch (error) {
             console.error("Test data generation failed:", error);
@@ -4630,7 +4630,7 @@
 
             // 4. Reload data into memory
             window.members = serverMembers.sort((a, b) => a.name.localeCompare(b.name));
-            window.logs = serverLogs.sort((a, b) => (b.id && a.id) ? String(b.id).localeCompare(String(a.id)) : 0);
+            window.logs = serverLogs.sort((a, b) => (!a || !b || !a.id || !b.id) ? 0 : String(b.id).localeCompare(String(a.id)));
             window.instructors = serverInstructors.reduce((acc, curr) => {
                 acc[curr.id] = curr.name;
                 return acc;
@@ -4753,7 +4753,7 @@
                     
                     // 4. Load data into memory directly from fetched data
                     window.members = serverMembers.sort((a, b) => a.name.localeCompare(b.name));
-                    window.logs = serverLogs.sort((a, b) => (b.id && a.id) ? String(b.id).localeCompare(String(a.id)) : 0);
+                    window.logs = serverLogs.sort((a, b) => (!a || !b || !a.id || !b.id) ? 0 : String(b.id).localeCompare(String(a.id)));
                     window.instructors = serverInstructors.reduce((acc, curr) => { acc[curr.id] = curr.name; return acc; }, {});
                     
                     // 5. Update sync time and status
@@ -4766,7 +4766,7 @@
                     if (backup.members && backup.logs && backup.instructors) {
                         // Restore from backup to in-memory state
                         window.members = backup.members.sort((a, b) => a.name.localeCompare(b.name));
-                        window.logs = backup.logs.sort((a, b) => (b.id && a.id) ? String(b.id).localeCompare(String(a.id)) : 0);
+                        window.logs = backup.logs.sort((a, b) => (!a || !b || !a.id || !b.id) ? 0 : String(b.id).localeCompare(String(a.id)));
                         window.instructors = backup.instructors.reduce((acc, curr) => { acc[curr.sessionCode] = curr.name; return acc; }, {});
                         showAlert('초기 동기화 실패', '서버 데이터 동기화에 실패하여, 기기에 저장된 이전 데이터로 앱을 시작합니다.');
                         showSyncStatus('offline', '로컬 데이터로 실행');
@@ -4795,7 +4795,7 @@
                 }
 
                 window.members = membersData.sort((a, b) => a.name.localeCompare(b.name));
-                window.logs = logsData.sort((a, b) => (b.id && a.id) ? String(b.id).localeCompare(String(a.id)) : 0);
+                window.logs = logsData.sort((a, b) => (!a || !b || !a.id || !b.id) ? 0 : String(b.id).localeCompare(String(a.id)));
                 window.instructors = instructorsData.reduce((acc, curr) => {
                     acc[curr.sessionCode] = curr.name;
                     return acc;
