@@ -1262,6 +1262,7 @@
     // [NEW] Helper function to populate the attendance check dropdown
     function updateCheckUserSelect() {
         const select = document.getElementById('check-user-select');
+        if (!select) return;
         const currentValue = select.value; // Preserve selection if possible
 
         select.innerHTML = '<option value="">⬇️ 여기를 눌러 이름 선택</option>'; 
@@ -3127,8 +3128,8 @@
         document.getElementById('history-member-name').innerText = `${member.name} 님의 출석 이력`;
         const list = document.getElementById('history-list');
         list.innerHTML = ''; // Clear previous content
-        // [FIX] Use String comparison for log filtering
-        const history = logs.filter(l => String(l.memberId) === String(memberId)).sort((a, b) => b.id - a.id);
+        // [FIX] Use String comparison for log filtering and robust sorting for descending order
+        const history = logs.filter(l => String(l.memberId) === String(memberId)).sort((a, b) => (b.id && a.id) ? String(b.id).localeCompare(String(a.id)) : 0);
         
         const pendingStatusHtml = `<span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded ml-2"><i class="fas fa-clock mr-1"></i>대기중</span>`;
 
@@ -4393,7 +4394,7 @@
                 window.logs = await dbHelper.getAll('logs');
                 window.members = await dbHelper.getAll('members');
                 // Sort logs by ID desc (newest first)
-                window.logs.sort((a, b) => b.id - a.id);
+                window.logs.sort((a, b) => (b.id && a.id) ? String(b.id).localeCompare(String(a.id)) : 0);
             } catch (e) { console.error("Failed to reload data:", e); }
         } catch (error) {
             console.error("Test data generation failed:", error);
@@ -4765,7 +4766,7 @@
                     if (backup.members && backup.logs && backup.instructors) {
                         // Restore from backup to in-memory state
                         window.members = backup.members.sort((a, b) => a.name.localeCompare(b.name));
-                        window.logs = backup.logs.sort((a, b) => b.id - a.id);
+                        window.logs = backup.logs.sort((a, b) => (b.id && a.id) ? String(b.id).localeCompare(String(a.id)) : 0);
                         window.instructors = backup.instructors.reduce((acc, curr) => { acc[curr.sessionCode] = curr.name; return acc; }, {});
                         showAlert('초기 동기화 실패', '서버 데이터 동기화에 실패하여, 기기에 저장된 이전 데이터로 앱을 시작합니다.');
                         showSyncStatus('offline', '로컬 데이터로 실행');
@@ -4794,7 +4795,7 @@
                 }
 
                 window.members = membersData.sort((a, b) => a.name.localeCompare(b.name));
-                window.logs = logsData.sort((a, b) => b.id - a.id);
+                window.logs = logsData.sort((a, b) => (b.id && a.id) ? String(b.id).localeCompare(String(a.id)) : 0);
                 window.instructors = instructorsData.reduce((acc, curr) => {
                     acc[curr.sessionCode] = curr.name;
                     return acc;
@@ -4844,7 +4845,6 @@
             }
 
             // DOM이 준비된 후 UI 렌더링
-            renderMembers();
             updateCheckUserSelect();
             updateLastSyncTimeDisplay();
         } catch (error) {
