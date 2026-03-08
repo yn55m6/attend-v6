@@ -1262,6 +1262,7 @@
     // [NEW] Helper function to populate the attendance check dropdown
     function updateCheckUserSelect() {
         const select = document.getElementById('check-user-select');
+        if (!select) return;
         const currentValue = select.value; // Preserve selection if possible
 
         select.innerHTML = '<option value="">⬇️ 여기를 눌러 이름 선택</option>'; 
@@ -4844,7 +4845,6 @@
             }
 
             // DOM이 준비된 후 UI 렌더링
-            renderMembers();
             updateCheckUserSelect();
             updateLastSyncTimeDisplay();
         } catch (error) {
