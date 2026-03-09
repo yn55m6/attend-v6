@@ -1400,15 +1400,39 @@
 
     // [NEW] Helper to proceed with new member creation
     async function proceedNewMember(name, dateStr, sessionCode) {
-        // Create new member
+        // [FIX] 버그1: 온라인 시 Firebase 즉시 저장 / 버그2: Firebase id를 memberId로 사용해 동기화 후 연결 유지
         const newMemberData = { name, phone: "0000", registeredAt: new Date().toISOString() };
-        const newId = await dbHelper.add('members', newMemberData);
-        newMemberData.id = newId;
+        let memberId;
+
+        try {
+            if (navigator.onLine && firebaseHelper.initFirebase()) {
+                // 온라인: Firebase 먼저 저장 (Firebase 문자열 id 사용)
+                const docRef = firebaseHelper.getCollection('members').doc();
+                newMemberData.id = docRef.id;
+                await docRef.set(newMemberData);             // Firebase 저장
+                await dbHelper.put('members', newMemberData); // IndexedDB 저장
+                memberId = docRef.id;
+            } else {
+                // 오프라인: IndexedDB에만 저장 후 pending 표시
+                newMemberData.syncStatus = 'pending';
+                const newId = await dbHelper.add('members', newMemberData);
+                newMemberData.id = newId;
+                memberId = newId;
+            }
+        } catch (error) {
+            console.error('proceedNewMember - 저장 오류:', error);
+            // Firebase 실패 시 오프라인 방식으로 fallback
+            newMemberData.syncStatus = 'pending';
+            const newId = await dbHelper.add('members', newMemberData);
+            newMemberData.id = newId;
+            memberId = newId;
+        }
+
         window.members.push(newMemberData);
         window.members.sort((a, b) => a.name.localeCompare(b.name));
-        
-        // Immediately check in
-        await confirmAttendanceWithId(newId, true, dateStr, sessionCode);
+
+        // 출석 처리 (Firebase id 기반 memberId 사용 → 동기화 후에도 회원-출석 연결 유지)
+        await confirmAttendanceWithId(memberId, true, dateStr, sessionCode);
     }
 
     // --- 3. Helper Functions ---
